@@ -1,0 +1,42 @@
+{
+  "originHash" : "ec1e537b747eaa6b54aae467edeac081612141036e5ae7fa0019ecb56fb7e3bb",
+  "pins" : [
+    {
+      "identity" : "runestone",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/simonbs/Runestone",
+      "state" : {
+        "revision" : "592434a103a4d1ab83e14f87ac6eef569dd7a99d",
+        "version" : "0.5.2"
+      }
+    },
+    {
+      "identity" : "tree-sitter",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/tree-sitter/tree-sitter",
+      "state" : {
+        "revision" : "98be227227af10cc7a269cb3ffb23686c0610b17",
+        "version" : "0.20.9"
+      }
+    },
+    {
+      "identity" : "treesitterlanguages",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/simonbs/TreeSitterLanguages",
+      "state" : {
+        "revision" : "15cf3a9ec3ab95e0d058b7df9f35619123c9e02d",
+        "version" : "0.1.10"
+      }
+    },
+    {
+      "identity" : "yaml",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Argsment/YAML",
+      "state" : {
+        "branch" : "main",
+        "revision" : "1cc58b32e84fa7259a49b046072fa3a44701e4b7"
+      }
+    }
+  ],
+  "version" : 3
+}
