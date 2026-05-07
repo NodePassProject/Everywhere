@@ -16,7 +16,7 @@ struct DNSSettingsView: View {
         Form {
             Section {
                 if appState.dnsServers.isEmpty {
-                    Text("No servers configured.")
+                    Text("No servers")
                         .foregroundColor(.secondary)
                 } else {
                     ForEach(appState.dnsServers, id: \.self) { server in
@@ -50,7 +50,7 @@ struct DNSSettingsView: View {
             }
 
             Section {
-                Button("Reset to Defaults") {
+                Button("Reset to default") {
                     appState.dnsServers = AppState.defaultDNSServers
                 }
             }

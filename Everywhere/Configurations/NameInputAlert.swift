@@ -29,9 +29,9 @@ enum NameInputAlert {
             tf.clearButtonMode = .whileEditing
         }
 
-        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        alert.addAction(UIAlertAction(title: String(localized: "Cancel"), style: .cancel))
 
-        let save = UIAlertAction(title: "Save", style: .default) { _ in
+        let save = UIAlertAction(title: String(localized: "Save"), style: .default) { _ in
             let raw = alert.textFields?.first?.text ?? ""
             let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !trimmed.isEmpty else { return }

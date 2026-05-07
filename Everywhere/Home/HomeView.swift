@@ -81,12 +81,12 @@ struct HomeView: View {
 
     private var statusText: String {
         switch tunnel.state {
-        case .loading: return "Loading…"
-        case .disconnected: return "Off"
-        case .connecting: return "Connecting…"
-        case .connected: return "Connected"
-        case .disconnecting: return "Disconnecting…"
-        case .failed(let m): return "Failed: \(m)"
+        case .loading: return String(localized: "Loading")
+        case .disconnected: return String(localized: "Disconnected")
+        case .connecting: return String(localized: "Connecting")
+        case .connected: return String(localized: "Connected")
+        case .disconnecting: return String(localized: "Disconnecting")
+        case .failed: return String(localized: "Failed")
         }
     }
 

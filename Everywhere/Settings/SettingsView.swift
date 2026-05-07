@@ -21,6 +21,11 @@ struct SettingsView: View {
                 } label: {
                     Label("Resources", systemImage: "folder")
                 }
+                NavigationLink {
+                    AcknowledgementView()
+                } label: {
+                    Label("Acknowledgements", systemImage: "heart")
+                }
             }
             .navigationTitle("Settings")
         }

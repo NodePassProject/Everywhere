@@ -30,7 +30,7 @@ private struct YACDWebView: UIViewRepresentable {
         )
         let view = WKWebView(frame: .zero, configuration: cfg)
         view.scrollView.contentInsetAdjustmentBehavior = .automatic
-        view.load(URLRequest(url: YACDSchemeHandler.indexURL))
+        view.load(URLRequest(url: Self.localizedIndexURL))
         return view
     }
 
@@ -38,6 +38,26 @@ private struct YACDWebView: UIViewRepresentable {
 
     final class Coordinator {
         let handler = YACDSchemeHandler()
+    }
+
+    // iOS reports navigator.language as zh-Hans-CN/zh-Hant-TW, which YACD's
+    // supportedLngs (zh-CN/zh-TW) can't match. Seed the querystring detector.
+    private static var localizedIndexURL: URL {
+        let raw = (Locale.preferredLanguages.first ?? "en").lowercased()
+        let tag: String
+        if raw.hasPrefix("zh-hant") || raw.hasPrefix("zh-tw")
+            || raw.hasPrefix("zh-hk") || raw.hasPrefix("zh-mo") {
+            tag = "zh-TW"
+        } else if raw.hasPrefix("zh") {
+            tag = "zh-CN"
+        } else if raw.hasPrefix("vi") {
+            tag = "vi"
+        } else if raw.hasPrefix("ru") {
+            tag = "ru"
+        } else {
+            tag = "en"
+        }
+        return URL(string: "\(YACDSchemeHandler.indexURL.absoluteString)?lng=\(tag)")!
     }
 }
 
