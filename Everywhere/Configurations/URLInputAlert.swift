@@ -1,5 +1,5 @@
 //
-//  NameInputAlert.swift
+//  URLInputAlert.swift
 //  Everywhere
 //
 //  Created by Argsment Limited on 5/2/26.
@@ -7,23 +7,22 @@
 
 import UIKit
 
-// SwiftUI's `.alert` did not get a `TextField` action until iOS 16.
-// Since the app targets iOS 15, the simplest cross-version path is to
-// drop down to UIAlertController and present it on top of whatever
-// view controller SwiftUI is currently showing.
-enum NameInputAlert {
+// Mirrors NameInputAlert: drops down to UIAlertController so we keep
+// working on iOS 15 where SwiftUI's `.alert` doesn't yet have a
+// TextField action.
+enum URLInputAlert {
     static func present(
         title: String,
         message: String? = nil,
-        placeholder: String = "Name",
-        initialValue: String = "",
-        onSubmit: @escaping (String) -> Void
+        placeholder: String = "https://",
+        onSubmit: @escaping (URL) -> Void
     ) {
         let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
 
         alert.addTextField { tf in
             tf.placeholder = placeholder
-            tf.text = initialValue
+            tf.keyboardType = .URL
+            tf.textContentType = .URL
             tf.autocapitalizationType = .none
             tf.autocorrectionType = .no
             tf.clearButtonMode = .whileEditing
@@ -31,23 +30,33 @@ enum NameInputAlert {
 
         alert.addAction(UIAlertAction(title: String(localized: "Cancel"), style: .cancel))
 
-        let save = UIAlertAction(title: String(localized: "Save"), style: .default) { _ in
+        let submit = UIAlertAction(title: String(localized: "Download"), style: .default) { _ in
             let raw = alert.textFields?.first?.text ?? ""
-            let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !trimmed.isEmpty else { return }
-            onSubmit(trimmed)
+            guard let url = parsed(raw) else { return }
+            onSubmit(url)
         }
-        save.isEnabled = !initialValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        alert.addAction(save)
-        alert.preferredAction = save
+        submit.isEnabled = false
+        alert.addAction(submit)
+        alert.preferredAction = submit
 
-        // Keep Save disabled while the field is empty.
         alert.textFields?.first?.addAction(UIAction { _ in
             let text = alert.textFields?.first?.text ?? ""
-            save.isEnabled = !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            submit.isEnabled = parsed(text) != nil
         }, for: .editingChanged)
 
         topViewController()?.present(alert, animated: true)
+    }
+
+    private static func parsed(_ raw: String) -> URL? {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty,
+              let url = URL(string: trimmed),
+              let scheme = url.scheme?.lowercased(),
+              scheme == "http" || scheme == "https",
+              url.host?.isEmpty == false else {
+            return nil
+        }
+        return url
     }
 
     private static func topViewController() -> UIViewController? {
