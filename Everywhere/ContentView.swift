@@ -28,6 +28,6 @@ struct ContentView: View {
 
     // yacd talks to the clash REST API, which Xray-core does not expose.
     private var showController: Bool {
-        tunnel.state == .connected && store.selectedCore != .xray
+        tunnel.coreRunning && store.selectedCore != .xray
     }
 }

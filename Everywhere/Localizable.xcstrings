@@ -81,6 +81,16 @@
         }
       }
     },
+    "Connection failed" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "连接失败"
+          }
+        }
+      }
+    },
     "Controller" : {
       "localizations" : {
         "zh-Hans" : {
@@ -214,16 +224,6 @@
         }
       }
     },
-    "Failed" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "失败"
-          }
-        }
-      }
-    },
     "Files" : {
       "localizations" : {
         "zh-Hans" : {
@@ -270,6 +270,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "从文件导入"
+          }
+        }
+      }
+    },
+    "Imported Configuration" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "导入的配置"
           }
         }
       }
@@ -344,12 +354,32 @@
         }
       }
     },
+    "Not Configured" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未配置"
+          }
+        }
+      }
+    },
     "OK" : {
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "好"
+          }
+        }
+      }
+    },
+    "Reconnecting" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在重新连接"
           }
         }
       }
@@ -470,6 +500,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "隧道正在运行"
+          }
+        }
+      }
+    },
+    "Unknown" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未知"
           }
         }
       }

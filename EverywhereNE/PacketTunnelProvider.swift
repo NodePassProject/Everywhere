@@ -14,6 +14,12 @@ final class PacketTunnelProvider: NEPacketTunnelProvider {
     private static let tunnelMTU = 1500
     private static let appGroupIdentifier = "group.com.argsment.Everywhere"
 
+    // When the Go core or tun2socks fails to start, we keep the NE alive
+    // so the containing app can fetch the reason via IPC. Calling
+    // `completionHandler(error)` would have the system terminate the NE
+    // before the app gets a chance to read it.
+    private var coreError: String?
+
     override func startTunnel(options _: [String: NSObject]?, completionHandler: @escaping (Error?) -> Void) {
         let providerConfig = (protocolConfiguration as? NETunnelProviderProtocol)?.providerConfiguration ?? [:]
         let coreType = (providerConfig["coreType"] as? String) ?? EvcoreCoreTypeXray
@@ -53,7 +59,8 @@ final class PacketTunnelProvider: NEPacketTunnelProvider {
 
             var coreErr: NSError?
             guard EvcoreStartCore(coreType, configContent, &coreErr) else {
-                completionHandler(coreErr)
+                self.coreError = coreErr?.localizedDescription ?? "core failed to start"
+                completionHandler(nil)
                 return
             }
 
@@ -61,7 +68,8 @@ final class PacketTunnelProvider: NEPacketTunnelProvider {
             guard EvcoreStartTunnel(Int(fd), Self.socksAddr, Self.tunnelMTU, &tunErr) else {
                 var stopErr: NSError?
                 EvcoreStopAll(&stopErr)
-                completionHandler(tunErr)
+                self.coreError = tunErr?.localizedDescription ?? "tunnel failed to start"
+                completionHandler(nil)
                 return
             }
 
@@ -78,7 +86,20 @@ final class PacketTunnelProvider: NEPacketTunnelProvider {
     }
 
     override func handleAppMessage(_ messageData: Data, completionHandler: ((Data?) -> Void)?) {
-        completionHandler?(messageData)
+        guard let json = try? JSONSerialization.jsonObject(with: messageData) as? [String: Any],
+              let type = json["type"] as? String else {
+            completionHandler?(nil)
+            return
+        }
+        switch type {
+        case "core-status":
+            var response: [String: Any] = ["running": coreError == nil]
+            if let err = coreError { response["error"] = err }
+            let data = try? JSONSerialization.data(withJSONObject: response)
+            completionHandler?(data)
+        default:
+            completionHandler?(nil)
+        }
     }
 
     private static func makeTunnelSettings(mtu: Int, dnsServers: [String]) -> NEPacketTunnelNetworkSettings {

@@ -82,20 +82,29 @@ func StartTunnel(tunFD int, socksAddr string, mtu int) error {
 	return nil
 }
 
-// StopAll halts the tunnel first, then the core.
+// StopAll halts the tunnel first, then the core. The actual teardown
+// is detached: the upstream libraries' close paths can each take
+// seconds (Xray drains outbounds, sing-box has a 10s/service timeout,
+// mihomo cleans up DNS/listeners), and we don't want the Network
+// Extension to block on that — iOS terminates the NE process shortly
+// after stopTunnel returns, which reclaims everything anyway. Errors
+// from the detached stop are intentionally dropped.
 func StopAll() error {
 	mu.Lock()
-	defer mu.Unlock()
-	var firstErr error
-	if tunRunning {
-		stopTun2socks()
-		tunRunning = false
-	}
-	if coreInstance != nil {
-		if err := coreInstance.stop(); err != nil {
-			firstErr = err
+	prevInstance := coreInstance
+	prevTun := tunRunning
+	coreInstance = nil
+	tunRunning = false
+	mu.Unlock()
+
+	go func() {
+		defer func() { _ = recover() }()
+		if prevTun {
+			stopTun2socks()
 		}
-		coreInstance = nil
-	}
-	return firstErr
+		if prevInstance != nil {
+			_ = prevInstance.stop()
+		}
+	}()
+	return nil
 }

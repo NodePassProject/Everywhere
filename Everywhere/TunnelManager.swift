@@ -10,59 +10,59 @@ import Foundation
 import NetworkExtension
 
 final class TunnelManager: ObservableObject {
-    enum State: Equatable {
-        case loading
-        case disconnected
-        case connecting
-        case connected
-        case disconnecting
-        case failed(String)
-    }
-
     static let shared = TunnelManager()
 
-    @Published private(set) var state: State = .loading
+    @Published private(set) var status: NEVPNStatus = .disconnected
+    @Published private(set) var isReady: Bool = false
+    @Published private(set) var coreRunning: Bool = false
+    @Published private(set) var lastError: String?
     private var manager: NETunnelProviderManager?
-    private var statusObserver: NSObjectProtocol?
+    private var statusObserver: AnyCancellable?
 
     private init() {
+        setupStatusObserver()
         Task { await reload() }
-    }
-
-    deinit {
-        if let statusObserver { NotificationCenter.default.removeObserver(statusObserver) }
     }
 
     func reload() async {
         do {
             let managers = try await NETunnelProviderManager.loadAllFromPreferences()
-            let m = managers.first ?? NETunnelProviderManager()
+            let m = managers.first(where: {
+                ($0.protocolConfiguration as? NETunnelProviderProtocol)?.providerBundleIdentifier == AppGroup.extensionBundleID
+            }) ?? managers.first ?? NETunnelProviderManager()
             self.manager = m
-            self.state = Self.translate(m.connection.status)
-            installStatusObserver(for: m)
+            self.status = m.connection.status
+            self.isReady = true
+            if m.connection.status == .connected {
+                queryCoreStatus()
+            }
         } catch {
-            self.state = .failed(error.localizedDescription)
+            self.lastError = error.localizedDescription
+            self.isReady = true
         }
     }
 
     func setEnabled(_ on: Bool, configuration: Configuration?) async {
         guard let configuration else {
-            state = .failed("No configuration is active.")
+            lastError = "No configuration is active."
             return
         }
         do {
             let normalized = try ConfigNormalizer.normalize(configuration.content, for: configuration.coreType)
             let m = try await ensureManager(coreType: configuration.coreType, configContent: normalized)
             if on {
-                state = .connecting
                 try m.connection.startVPNTunnel()
             } else {
-                state = .disconnecting
                 m.connection.stopVPNTunnel()
             }
+            lastError = nil
         } catch {
-            state = .failed(error.localizedDescription)
+            lastError = error.localizedDescription
         }
+    }
+
+    func clearLastError() {
+        lastError = nil
     }
 
     private func ensureManager(coreType: CoreType, configContent: String) async throws -> NETunnelProviderManager {
@@ -81,29 +81,67 @@ final class TunnelManager: ObservableObject {
         try await m.saveToPreferences()
         try await m.loadFromPreferences()
         manager = m
-        installStatusObserver(for: m)
         return m
     }
 
-    private func installStatusObserver(for m: NETunnelProviderManager) {
-        if let statusObserver { NotificationCenter.default.removeObserver(statusObserver) }
-        statusObserver = NotificationCenter.default.addObserver(
-            forName: .NEVPNStatusDidChange,
-            object: m.connection,
-            queue: .main
-        ) { [weak self] _ in
-            guard let self else { return }
-            self.state = Self.translate(m.connection.status)
-        }
+    private func setupStatusObserver() {
+        statusObserver = NotificationCenter.default
+            .publisher(for: .NEVPNStatusDidChange)
+            .compactMap { $0.object as? NEVPNConnection }
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] connection in
+                guard let self else { return }
+                guard connection === self.manager?.connection else { return }
+                self.status = connection.status
+                if connection.status == .connected {
+                    self.queryCoreStatus()
+                } else {
+                    self.coreRunning = false
+                }
+            }
     }
 
-    private static func translate(_ status: NEVPNStatus) -> State {
-        switch status {
-        case .invalid, .disconnected: return .disconnected
-        case .connecting, .reasserting: return .connecting
-        case .connected: return .connected
-        case .disconnecting: return .disconnecting
-        @unknown default: return .disconnected
+    // The NE keeps itself alive on a core start failure so we can fetch the
+    // reason here. When the response says the core isn't running, surface
+    // the message and tear the tunnel down — the NE has nothing useful to
+    // route through, but iOS thinks it's connected.
+    private func queryCoreStatus() {
+        guard let session = manager?.connection as? NETunnelProviderSession else { return }
+        let message: [String: Any] = ["type": "core-status"]
+        guard let data = try? JSONSerialization.data(withJSONObject: message) else { return }
+        do {
+            try session.sendProviderMessage(data) { [weak self] response in
+                guard let self,
+                      let response,
+                      let json = try? JSONSerialization.jsonObject(with: response) as? [String: Any]
+                else { return }
+                let running = json["running"] as? Bool ?? true
+                let error = json["error"] as? String
+                DispatchQueue.main.async {
+                    // Status may have changed while the IPC was in flight;
+                    // only mark the core as running if we're still connected.
+                    guard self.status == .connected else { return }
+                    if running {
+                        self.coreRunning = true
+                    } else {
+                        self.coreRunning = false
+                        self.lastError = error ?? "Core failed to start."
+                        session.stopVPNTunnel()
+                    }
+                }
+            }
+        } catch {
+            // ignore — NE may have died between the status flip and the send
         }
+    }
+}
+
+extension NEVPNStatus {
+    var isTransitioning: Bool {
+        self == .connecting || self == .disconnecting || self == .reasserting
+    }
+
+    var isActive: Bool {
+        self == .connected || isTransitioning
     }
 }
