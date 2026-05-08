@@ -130,7 +130,7 @@ struct ConfigurationsView: View {
     }
 
     private func activate(_ config: Configuration) {
-        if tunnel.state != .disconnected {
+        if tunnel.status.isActive {
             blockedAlert = true
             return
         }
@@ -139,7 +139,7 @@ struct ConfigurationsView: View {
 
     private func delete(_ config: Configuration) {
         defer { pendingDelete = nil }
-        if tunnel.state != .disconnected, activeID == config.id {
+        if tunnel.status.isActive, activeID == config.id {
             blockedAlert = true
             return
         }
@@ -214,13 +214,9 @@ struct ConfigurationsView: View {
                         userInfo: [NSLocalizedDescriptionKey: "Response is not valid UTF-8 text."]
                     )
                 }
-                await MainActor.run {
-                    store.create(name: derivedName(from: url), type: core, content: content)
-                }
+                store.create(name: derivedName(from: url), type: core, content: content)
             } catch {
-                await MainActor.run {
-                    importErrorMessage = "Could not download: \(error.localizedDescription)"
-                }
+                importErrorMessage = error.localizedDescription
             }
         }
     }
@@ -234,6 +230,6 @@ struct ConfigurationsView: View {
         if let host = url.host, !host.isEmpty {
             return host
         }
-        return "Imported"
+        return String(localized: "Imported Configuration")
     }
 }

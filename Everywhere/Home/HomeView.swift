@@ -5,6 +5,7 @@
 //  Created by Argsment Limited on 5/2/26.
 //
 
+import NetworkExtension
 import SwiftUI
 
 struct HomeView: View {
@@ -46,7 +47,7 @@ struct HomeView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .contentShape(Rectangle())
                         .onTapGesture {
-                            if tunnel.state != .disconnected {
+                            if tunnel.status.isActive {
                                 coreSwitchBlocked = true
                             } else {
                                 store.selectedCore = core
@@ -75,31 +76,48 @@ struct HomeView: View {
             } message: {
                 Text("Stop the tunnel before switching cores.")
             }
+            .alert(
+                "Connection failed",
+                isPresented: errorAlertBinding,
+                presenting: tunnel.lastError
+            ) { _ in
+                Button("OK", role: .cancel) { tunnel.clearLastError() }
+            } message: { message in
+                Text(message)
+            }
         }
         .navigationViewStyle(.stack)
     }
 
+    private var errorAlertBinding: Binding<Bool> {
+        Binding(
+            get: { tunnel.lastError != nil },
+            set: { if !$0 { tunnel.clearLastError() } }
+        )
+    }
+
     private var statusText: String {
-        switch tunnel.state {
-        case .loading: return String(localized: "Loading")
-        case .disconnected: return String(localized: "Disconnected")
-        case .connecting: return String(localized: "Connecting")
+        if !tunnel.isReady { return String(localized: "Loading") }
+        switch tunnel.status {
         case .connected: return String(localized: "Connected")
+        case .connecting: return String(localized: "Connecting")
         case .disconnecting: return String(localized: "Disconnecting")
-        case .failed: return String(localized: "Failed")
+        case .reasserting: return String(localized: "Reconnecting")
+        case .disconnected: return String(localized: "Disconnected")
+        case .invalid: return String(localized: "Not Configured")
+        @unknown default: return String(localized: "Unknown")
         }
     }
 
     private var isToggleDisabled: Bool {
-        switch tunnel.state {
-        case .connecting, .disconnecting, .loading: return true
-        default: return store.active == nil
-        }
+        if !tunnel.isReady { return true }
+        if tunnel.status.isTransitioning { return true }
+        return store.active == nil
     }
 
     private var tunnelToggleBinding: Binding<Bool> {
         Binding(
-            get: { tunnel.state == .connected || tunnel.state == .connecting },
+            get: { tunnel.status == .connected || tunnel.status == .connecting },
             set: { newValue in
                 guard let active = store.active else { return }
                 Task {
