@@ -15,7 +15,6 @@ struct ConfigEditorScreen: View {
     var body: some View {
         ConfigEditorView(text: draftBinding, language: configuration.coreType.configLanguage)
             .id(configuration.id)
-            .ignoresSafeArea(edges: .bottom)
             .navigationTitle(configuration.name.isEmpty ? "Configuration" : configuration.name)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
