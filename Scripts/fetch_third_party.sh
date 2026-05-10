@@ -24,7 +24,6 @@ clone_at_tag() {
   git clone --depth 1 --branch "$tag" "$url" "$path"
 }
 
-clone_at_tag https://github.com/xjasonlyu/tun2socks.git v2.6.0    tun2socks
 clone_at_tag https://github.com/XTLS/Xray-core.git       v26.3.27 Xray-core
 clone_at_tag https://github.com/SagerNet/sing-box.git    v1.13.11 sing-box
 clone_at_tag https://github.com/MetaCubeX/mihomo.git     v1.19.24 mihomo

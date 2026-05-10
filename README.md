@@ -76,7 +76,6 @@ Everywhere wouldn't exist without the work of these wonderful projects:
 - [Xray-core](https://github.com/XTLS/Xray-core)
 - [sing-box](https://github.com/SagerNet/sing-box)
 - [mihomo](https://github.com/MetaCubeX/mihomo)
-- [tun2socks](https://github.com/xjasonlyu/tun2socks)
 - [yacd](https://github.com/MetaCubeX/Yacd-meta)
 - [Runestone](https://github.com/simonbs/Runestone)
 

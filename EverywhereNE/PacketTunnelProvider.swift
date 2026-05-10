@@ -9,13 +9,11 @@ import EverywhereCore
 import NetworkExtension
 
 final class PacketTunnelProvider: NEPacketTunnelProvider {
-    private static let socksPort = 10808
-    private static let socksAddr = "127.0.0.1:\(socksPort)"
     private static let tunnelMTU = 1500
     private static let appGroupIdentifier = "group.com.argsment.Everywhere"
 
-    // When the Go core or tun2socks fails to start, we keep the NE alive
-    // so the containing app can fetch the reason via IPC. Calling
+    // When the Go core fails to start, we keep the NE alive so the
+    // containing app can fetch the reason via IPC. Calling
     // `completionHandler(error)` would have the system terminate the NE
     // before the app gets a chance to read it.
     private var coreError: String?
@@ -58,17 +56,8 @@ final class PacketTunnelProvider: NEPacketTunnelProvider {
             }
 
             var coreErr: NSError?
-            guard EvcoreStartCore(coreType, configContent, &coreErr) else {
+            guard EvcoreStartCore(coreType, configContent, Int(fd), Self.tunnelMTU, &coreErr) else {
                 self.coreError = coreErr?.localizedDescription ?? "core failed to start"
-                completionHandler(nil)
-                return
-            }
-
-            var tunErr: NSError?
-            guard EvcoreStartTunnel(Int(fd), Self.socksAddr, Self.tunnelMTU, &tunErr) else {
-                var stopErr: NSError?
-                EvcoreStopAll(&stopErr)
-                self.coreError = tunErr?.localizedDescription ?? "tunnel failed to start"
                 completionHandler(nil)
                 return
             }
@@ -104,10 +93,21 @@ final class PacketTunnelProvider: NEPacketTunnelProvider {
 
     private static func makeTunnelSettings(mtu: Int, dnsServers: [String]) -> NEPacketTunnelNetworkSettings {
         let settings = NEPacketTunnelNetworkSettings(tunnelRemoteAddress: "127.0.0.1")
+
         let ipv4 = NEIPv4Settings(addresses: ["198.18.0.1"], subnetMasks: ["255.255.0.0"])
         ipv4.includedRoutes = [NEIPv4Route.default()]
         ipv4.excludedRoutes = []
         settings.ipv4Settings = ipv4
+
+        // Mirror the IPv6 prefix the cores' TUN inbounds advertise via
+        // ConfigNormalizer (fd00::1/126 — a small ULA range) so iOS
+        // hands v6 packets to our utun, which the gvisor stack then
+        // dispatches the same way as v4.
+        let ipv6 = NEIPv6Settings(addresses: ["fd00::1"], networkPrefixLengths: [126])
+        ipv6.includedRoutes = [NEIPv6Route.default()]
+        ipv6.excludedRoutes = []
+        settings.ipv6Settings = ipv6
+
         settings.dnsSettings = NEDNSSettings(servers: dnsServers)
         settings.mtu = NSNumber(value: mtu)
         return settings

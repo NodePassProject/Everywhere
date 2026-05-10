@@ -9,10 +9,9 @@ import Foundation
 
 // Minimal starter configs. Each one routes everything through a
 // placeholder direct outbound — replace it with your real proxy server
-// before use. The SOCKS inbound on 127.0.0.1:10808 that the
-// PacketTunnelProvider hands to tun2socks is injected by
-// ConfigNormalizer at start time, so don't add one here (a duplicate
-// would make sing-box fail to bind with "address already in use").
+// before use. The TUN inbound that consumes the iOS NEPacketTunnelFlow
+// utun is injected by ConfigNormalizer at start time, so don't add one
+// here (a duplicate would conflict with ours).
 //
 // mihomo and sing-box also expose the clash-compat REST API on
 // 127.0.0.1:9090 — that's the address the bundled yacd dashboard

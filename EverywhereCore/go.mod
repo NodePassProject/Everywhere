@@ -6,7 +6,7 @@ require (
 	github.com/metacubex/mihomo v1.19.24
 	github.com/sagernet/sing v0.8.9
 	github.com/sagernet/sing-box v1.13.11
-	github.com/xjasonlyu/tun2socks/v2 v2.6.0
+	github.com/sagernet/sing-tun v0.8.9
 	github.com/xtls/xray-core v1.0.0
 	golang.org/x/mobile v0.0.0-20260410095206-2cfb76559b7b
 )
@@ -33,7 +33,6 @@ require (
 	github.com/database64128/tfo-go/v2 v2.3.2 // indirect
 	github.com/dblohm7/wingoes v0.0.0-20240119213807-a09d6be7affa // indirect
 	github.com/dlclark/regexp2 v1.12.0 // indirect
-	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dunglas/httpsfv v1.0.2 // indirect
 	github.com/ebitengine/purego v0.9.1 // indirect
 	github.com/enfein/mieru/v3 v3.31.0 // indirect
@@ -48,9 +47,7 @@ require (
 	github.com/gaukas/godicttls v0.0.4 // indirect
 	github.com/ghodss/yaml v1.0.1-0.20220118164431-d8423dcdf344 // indirect
 	github.com/go-chi/chi/v5 v5.2.5 // indirect
-	github.com/go-chi/cors v1.2.1 // indirect
 	github.com/go-chi/render v1.0.3 // indirect
-	github.com/go-gost/relay v0.5.0 // indirect
 	github.com/go-json-experiment/json v0.0.0-20250813024750-ebf49471dced // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/gobwas/httphead v0.1.0 // indirect
@@ -64,9 +61,7 @@ require (
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/nftables v0.2.1-0.20240414091927-5e242ec57806 // indirect
 	github.com/google/pprof v0.0.0-20240727154555-813a5fbdbec8 // indirect
-	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/gorilla/schema v1.4.1 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/hashicorp/yamux v0.1.2 // indirect
 	github.com/hdevalence/ed25519consensus v0.2.0 // indirect
@@ -181,7 +176,6 @@ require (
 	github.com/sagernet/sing-shadowsocks v0.2.8 // indirect
 	github.com/sagernet/sing-shadowsocks2 v0.2.1 // indirect
 	github.com/sagernet/sing-shadowtls v0.2.1-0.20250503051639-fcd445d33c11 // indirect
-	github.com/sagernet/sing-tun v0.8.9 // indirect
 	github.com/sagernet/sing-vmess v0.2.8-0.20250909125414-3aed155119a1 // indirect
 	github.com/sagernet/smux v1.5.50-sing-box-mod.1 // indirect
 	github.com/sagernet/tailscale v1.92.4-sing-box-1.13-mod.7 // indirect
@@ -214,7 +208,6 @@ require (
 	github.com/zeebo/blake3 v0.2.4 // indirect
 	gitlab.com/go-extension/aes-ccm v0.0.0-20230221065045-e58665ef23c7 // indirect
 	gitlab.com/yawning/bsaes.git v0.0.0-20190805113838-0a714cd429ec // indirect
-	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.1 // indirect
 	go.uber.org/zap/exp v0.3.0 // indirect
@@ -246,10 +239,5 @@ require (
 replace (
 	github.com/metacubex/mihomo => ../ThirdParty/mihomo
 	github.com/sagernet/sing-box => ../ThirdParty/sing-box
-	github.com/xjasonlyu/tun2socks/v2 => ../ThirdParty/tun2socks
 	github.com/xtls/xray-core => ../ThirdParty/Xray-core
-	// Pin upstream gvisor to the version tun2socks v2.6.0 was authored
-	// against. sing-box and mihomo use their own forks (sagernet/gvisor,
-	// metacubex/gvisor) so this only affects tun2socks's link-layer code.
-	gvisor.dev/gvisor => gvisor.dev/gvisor v0.0.0-20250523182742-eede7a881b20
 )

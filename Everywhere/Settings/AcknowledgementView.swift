@@ -95,12 +95,6 @@ struct Acknowledgement: Identifiable {
             """
         ),
         Acknowledgement(
-            name: "tun2socks",
-            url: URL(string: "https://github.com/xjasonlyu/tun2socks")!,
-            license: "MIT",
-            licenseText: Licenses.mit(copyright: "Copyright (c) 2019 Jason Lyu")
-        ),
-        Acknowledgement(
             name: "Yacd-meta",
             url: URL(string: "https://github.com/MetaCubeX/Yacd-meta")!,
             license: "MIT",

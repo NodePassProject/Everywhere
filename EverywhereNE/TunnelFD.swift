@@ -10,9 +10,9 @@ import NetworkExtension
 
 // Extracts the file descriptor backing the iOS utun device that
 // NEPacketTunnelFlow sits on top of. Apple does not expose this; the
-// established workaround used by every tun2socks-based VPN scans the
-// extension's small fd range and asks the kernel which one is a utun
-// control socket.
+// established workaround used by VPN apps that hand the FD to a Go
+// core scans the extension's small fd range and asks the kernel
+// which one is a utun control socket.
 //
 // We don't import <sys/kern_control.h> because the Swift Darwin
 // overlay doesn't surface sockaddr_ctl / SYSPROTO_CONTROL. We use a

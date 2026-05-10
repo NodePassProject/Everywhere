@@ -1,38 +1,18 @@
 # Patches
 
 Ledger of every change made on top of upstream sources or that is needed
-to make the four upstreams co-exist in one Go module. When bumping an
+to make the three upstreams co-exist in one Go module. When bumping an
 upstream tag, walk this list and re-apply anything still needed.
 
 ## Pinned tags
 
 | Upstream  | Tag       | Module path                          |
 | --------- | --------- | ------------------------------------ |
-| tun2socks | v2.6.0    | github.com/xjasonlyu/tun2socks/v2    |
 | Xray-core | v26.3.27  | github.com/xtls/xray-core            |
 | sing-box  | v1.13.11  | github.com/sagernet/sing-box         |
 | mihomo    | v1.19.24  | github.com/metacubex/mihomo          |
 
 ## go.mod overrides (`EverywhereCore/go.mod`)
-
-### gvisor.dev/gvisor pinned to tun2socks's expected version
-
-```
-replace gvisor.dev/gvisor => gvisor.dev/gvisor v0.0.0-20250523182742-eede7a881b20
-```
-
-**Why.** sing-box and mihomo transitively pull a newer upstream
-`gvisor.dev/gvisor`. tun2socks v2.6.0's `core/udp.go` calls
-`udp.NewForwarder(s, func(*udp.ForwarderRequest))` which is the old
-function-handler signature; newer gvisor changed `NewForwarder` to take
-a `udp.ForwarderHandler` interface, breaking the build.
-
-sing-box and mihomo do not import upstream gvisor — they each use their
-own forks (`github.com/sagernet/gvisor`, `github.com/metacubex/gvisor`),
-so pinning upstream gvisor only affects tun2socks.
-
-**On upstream bump.** When tun2socks ships a release that targets a
-newer upstream gvisor, drop this pin and let `go mod tidy` resolve.
 
 ### tools.go to anchor `golang.org/x/mobile/bind`
 
@@ -58,8 +38,8 @@ warning goes away. Side effects:
 
 ## Source patches
 
-None right now. tun2socks, Xray-core, sing-box, and mihomo all build
-unmodified at the pinned tags once the gvisor pin above is in place.
+None right now. Xray-core, sing-box, and mihomo all build unmodified
+at the pinned tags.
 
 ## Wiring quirks per core
 
@@ -67,11 +47,41 @@ These are not patches but call-site requirements that the wrappers in
 `EverywhereCore/` already encode. Listed here so they survive a future
 rewrite.
 
+### TUN inbound: each core consumes the iOS utun fd directly
+
+We don't ship a userland tun→socks bridge. Each core owns its own TUN
+inbound, with the FD plumbed differently:
+
+- **Xray-core**: read from the `xray.tun.fd` env var (see
+  `proxy/tun/tun_darwin.go`). `EverywhereCore/xray.go` sets it before
+  `core.StartInstance`.
+- **sing-box**: read via an `adapter.PlatformInterface` whose
+  `OpenInterface` is invoked by the tun inbound. The interface is
+  registered on the `box.Options.Context` via
+  `service.ContextWith[adapter.PlatformInterface]`. See
+  `EverywhereCore/singbox.go` for the minimal implementation; only
+  `OpenInterface`, `UnderNetworkExtension` and the
+  `CreateDefaultInterfaceMonitor` no-op stub do meaningful work.
+- **mihomo**: written into `cfg.General.Tun.FileDescriptor` between
+  `executor.ParseWithBytes` and `hub.ApplyConfig`. The wire-level
+  YAML key is `tun.file-descriptor`, but we keep the FD out of the
+  config string so users can't accidentally pin a stale value.
+
+For sing-box and mihomo we `syscall.Dup` the FD before handing it to
+sing-tun — its `Close()` always closes the wrapped `os.File`, so a
+non-dup'd path would tear down NEPacketTunnelFlow's underlying utun
+out from under the Network Extension. Xray's iOS tun_darwin path
+checks `ownsFd` and skips `Close()` when the FD came in externally,
+so we don't dup there.
+
 ### Xray-core: needs `_ "main/distro/all"` and `_ "main/json"`
 
 `distro/all` registers every inbound/outbound/transport via init().
-`main/json` registers the JSON config loader. `core.StartInstance("json", …)`
-fails without both. See `EverywhereCore/xray.go`.
+`main/json` registers the JSON config loader and transitively pulls
+in `infra/conf` and `proxy/tun`, which is what registers the `tun`
+inbound type in the JSON loader's protocol map.
+`core.StartInstance("json", …)` fails without both. See
+`EverywhereCore/xray.go`.
 
 ### sing-box: gomobile bind needs `-tags=with_*`
 

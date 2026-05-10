@@ -1,19 +1,24 @@
 // Package evcore is the gomobile-bound entry point for Everywhere's
-// networking stack. It wires tun2socks to one of three upstream proxy
-// cores — Xray, sing-box, or mihomo — that all share a single Go
-// runtime when this module is bound as one xcframework.
+// networking stack. It boots one of three upstream proxy cores —
+// Xray, sing-box, or mihomo — that all share a single Go runtime
+// when this module is bound as one xcframework.
+//
+// Each core owns its own TUN inbound, fed the iOS utun file
+// descriptor obtained from NEPacketTunnelProvider. There is no
+// separate userland tun→socks shim.
 //
 // The Swift side calls (in order):
 //
-//	StartCore(coreType, configContent) // boots the proxy core
-//	StartTunnel(tunFD, socksAddr, mtu) // boots tun2socks against TUN fd
+//	SetResourcesPath(path)                   // optional, asset dir
+//	StartCore(coreType, configContent,       // boots the proxy core
+//	          tunFD, mtu)                    //   with TUN attached
 //
 // On teardown:
 //
 //	StopAll()
 //
-// The provided configuration must include a SOCKS5 inbound on
-// 127.0.0.1 at a known port, and that port must match socksAddr.
+// The provided configuration must declare a TUN inbound for the
+// active core; ConfigNormalizer on the Swift side handles that.
 package evcore
 
 import (
@@ -31,21 +36,28 @@ const (
 var (
 	mu           sync.Mutex
 	coreInstance coreRunner
-	tunRunning   bool
 )
 
 type coreRunner interface {
 	stop() error
 }
 
-func Version() string { return "Everywhere Core v0.1" }
+func Version() string { return "Everywhere Core v0.2" }
 
-// StartCore boots the chosen proxy core.
-func StartCore(coreType, configContent string) error {
+// StartCore boots the chosen proxy core with TUN attached to the
+// given iOS utun file descriptor. The FD lifetime stays with the
+// caller — cores that need to own a copy dup it internally.
+func StartCore(coreType, configContent string, tunFD, mtu int) error {
 	mu.Lock()
 	defer mu.Unlock()
 	if coreInstance != nil {
 		return errors.New("a core is already running")
+	}
+	if tunFD < 0 {
+		return errors.New("invalid tun file descriptor")
+	}
+	if mtu <= 0 {
+		mtu = 1500
 	}
 	var (
 		r   coreRunner
@@ -53,11 +65,11 @@ func StartCore(coreType, configContent string) error {
 	)
 	switch coreType {
 	case CoreTypeXray:
-		r, err = startXray(configContent)
+		r, err = startXray(configContent, tunFD, mtu)
 	case CoreTypeSingBox:
-		r, err = startSingBox(configContent)
+		r, err = startSingBox(configContent, tunFD, mtu)
 	case CoreTypeMihomo:
-		r, err = startMihomo(configContent)
+		r, err = startMihomo(configContent, tunFD, mtu)
 	default:
 		return fmt.Errorf("unknown core type: %s", coreType)
 	}
@@ -68,42 +80,23 @@ func StartCore(coreType, configContent string) error {
 	return nil
 }
 
-// StartTunnel boots tun2socks against an iOS utun file descriptor.
-func StartTunnel(tunFD int, socksAddr string, mtu int) error {
-	mu.Lock()
-	defer mu.Unlock()
-	if tunRunning {
-		return errors.New("tunnel already running")
-	}
-	if err := startTun2socks(tunFD, socksAddr, mtu); err != nil {
-		return err
-	}
-	tunRunning = true
-	return nil
-}
-
-// StopAll halts the tunnel first, then the core. The actual teardown
-// is detached: the upstream libraries' close paths can each take
-// seconds (Xray drains outbounds, sing-box has a 10s/service timeout,
-// mihomo cleans up DNS/listeners), and we don't want the Network
-// Extension to block on that — iOS terminates the NE process shortly
-// after stopTunnel returns, which reclaims everything anyway. Errors
-// from the detached stop are intentionally dropped.
+// StopAll halts the running core. Teardown is detached: the upstream
+// libraries' close paths can each take seconds (Xray drains
+// outbounds, sing-box has a 10s/service timeout, mihomo cleans up
+// DNS/listeners), and we don't want the Network Extension to block
+// on that — iOS terminates the NE process shortly after stopTunnel
+// returns, which reclaims everything anyway. Errors from the
+// detached stop are intentionally dropped.
 func StopAll() error {
 	mu.Lock()
-	prevInstance := coreInstance
-	prevTun := tunRunning
+	prev := coreInstance
 	coreInstance = nil
-	tunRunning = false
 	mu.Unlock()
 
 	go func() {
 		defer func() { _ = recover() }()
-		if prevTun {
-			stopTun2socks()
-		}
-		if prevInstance != nil {
-			_ = prevInstance.stop()
+		if prev != nil {
+			_ = prev.stop()
 		}
 	}()
 	return nil

@@ -5,53 +5,57 @@
 //  Created by Argsment Limited on 5/2/26.
 //
 
-import Network
 import SwiftUI
+import Network
+
+private struct DNSServerDraft: Identifiable, Equatable {
+    let id = UUID()
+    var value: String
+}
 
 struct DNSSettingsView: View {
+    @Environment(\.editMode) private var editMode
+    
     @ObservedObject private var appState = AppState.shared
-    @State private var newServer: String = ""
+    @State private var serverDrafts: [DNSServerDraft] = []
+    
+    private var isEditing: Bool? { editMode?.wrappedValue.isEditing }
 
     var body: some View {
         Form {
-            Section {
-                if appState.dnsServers.isEmpty {
-                    Text("No servers")
-                        .foregroundColor(.secondary)
-                } else {
-                    ForEach(appState.dnsServers, id: \.self) { server in
-                        Text(server)
-                    }
-                    .onDelete { offsets in
-                        var s = appState.dnsServers
-                        s.remove(atOffsets: offsets)
-                        appState.dnsServers = s
-                    }
-                    .onMove { source, destination in
-                        var s = appState.dnsServers
-                        s.move(fromOffsets: source, toOffset: destination)
-                        appState.dnsServers = s
+            Section("DNS Servers") {
+                ForEach($serverDrafts) { $draft in
+                    if isEditing == true {
+                        TextField("Address", text: $draft.value)
+                            .keyboardType(.URL)
+                            .autocorrectionDisabled()
+                            .textInputAutocapitalization(.never)
+                    } else {
+                        Text(draft.value)
                     }
                 }
-            } header: {
-                Text("DNS Servers")
-            }
-
-            Section {
-                HStack {
-                    TextField("Address", text: $newServer)
-                        .textInputAutocapitalization(.never)
-                        .disableAutocorrection(true)
-                        .keyboardType(.numbersAndPunctuation)
-                        .onSubmit(add)
-                    Button("Add", action: add)
-                        .disabled(!isValid(newServer))
+                .onDelete { offsets in
+                    serverDrafts.remove(atOffsets: offsets)
+                    save()
+                }
+                .onMove { source, destination in
+                    serverDrafts.move(fromOffsets: source, toOffset: destination)
+                    save()
+                }
+                if isEditing == true {
+                    Button {
+                        withAnimation {
+                            serverDrafts.append(DNSServerDraft(value: ""))
+                        }
+                    } label: {
+                        Label("Add", systemImage: "plus")
+                    }
                 }
             }
 
             Section {
                 Button("Reset to default") {
-                    appState.dnsServers = AppState.defaultDNSServers
+                    reset()
                 }
             }
         }
@@ -62,13 +66,26 @@ struct DNSSettingsView: View {
                 EditButton()
             }
         }
+        .onAppear { loadInitial() }
+        .onChange(of: isEditing) { newValue in
+            if newValue == false {
+                save()
+            }
+        }
+    }
+    
+    private func loadInitial() {
+        serverDrafts = appState.dnsServers.map { DNSServerDraft(value: $0) }
     }
 
-    private func add() {
-        let trimmed = newServer.trimmingCharacters(in: .whitespaces)
-        guard isValid(trimmed), !appState.dnsServers.contains(trimmed) else { return }
-        appState.dnsServers.append(trimmed)
-        newServer = ""
+    private func save() {
+        let servers = serverDrafts
+            .map { $0.value.trimmingCharacters(in: .whitespacesAndNewlines) }
+        appState.dnsServers = servers
+    }
+    
+    private func reset() {
+        appState.dnsServers = AppState.defaultDNSServers
     }
 
     private func isValid(_ raw: String) -> Bool {
