@@ -344,16 +344,6 @@
         }
       }
     },
-    "No servers" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "无服务器"
-          }
-        }
-      }
-    },
     "Not Configured" : {
       "localizations" : {
         "zh-Hans" : {

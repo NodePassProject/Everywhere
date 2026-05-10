@@ -1,5 +1,5 @@
 {
-  "originHash" : "ec1e537b747eaa6b54aae467edeac081612141036e5ae7fa0019ecb56fb7e3bb",
+  "originHash" : "42fe9f92aec0d9b304ca98f22c55e85ccfe8be59d0aa85799f11ba1e56a337fd",
   "pins" : [
     {
       "identity" : "runestone",
@@ -26,15 +26,6 @@
       "state" : {
         "revision" : "15cf3a9ec3ab95e0d058b7df9f35619123c9e02d",
         "version" : "0.1.10"
-      }
-    },
-    {
-      "identity" : "yaml",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/Argsment/YAML",
-      "state" : {
-        "branch" : "main",
-        "revision" : "1cc58b32e84fa7259a49b046072fa3a44701e4b7"
       }
     }
   ],

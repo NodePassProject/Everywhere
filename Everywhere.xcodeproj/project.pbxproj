@@ -14,7 +14,6 @@
 		69321B71DB263C04777900ED /* EverywhereCore.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 86699188FD631D154661BB78 /* EverywhereCore.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		7FAB6E1B99843FBC3CEF9BD3 /* TreeSitterYAMLRunestone in Frameworks */ = {isa = PBXBuildFile; productRef = 41465227A138948FE50A7E53 /* TreeSitterYAMLRunestone */; };
 		8DA46DEAF1392B6586DBC9FC /* libresolv.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = AD2724A4F89A96B133F540CB /* libresolv.tbd */; };
-		92276EEF4F04F3AF3EBA4111 /* YAML in Frameworks */ = {isa = PBXBuildFile; productRef = E21B044589BA804B1F939340 /* YAML */; };
 		CB0BA4282FA6277800E37B2C /* NetworkExtension.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CB0BA4272FA6277800E37B2C /* NetworkExtension.framework */; };
 		CB0BA4302FA6277800E37B2C /* EverywhereNE.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = CB0BA4252FA6277800E37B2C /* EverywhereNE.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		CB0BA5672FA7059300E37B2C /* yacd-gh-pages in Resources */ = {isa = PBXBuildFile; fileRef = CB0BA5662FA7059300E37B2C /* yacd-gh-pages */; };
@@ -111,7 +110,6 @@
 				8DA46DEAF1392B6586DBC9FC /* libresolv.tbd in Frameworks */,
 				61E757C0609660122F8F2D98 /* TreeSitterJSONRunestone in Frameworks */,
 				7FAB6E1B99843FBC3CEF9BD3 /* TreeSitterYAMLRunestone in Frameworks */,
-				92276EEF4F04F3AF3EBA4111 /* YAML in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -184,7 +182,6 @@
 				4DC5B599D63656168B7AB4AD /* Runestone */,
 				5FC290B307CFBBDCAEB9AB4E /* TreeSitterJSONRunestone */,
 				41465227A138948FE50A7E53 /* TreeSitterYAMLRunestone */,
-				E21B044589BA804B1F939340 /* YAML */,
 			);
 			productName = Everywhere;
 			productReference = CB0BA4102FA6272C00E37B2C /* Everywhere.app */;
@@ -241,7 +238,6 @@
 			packageReferences = (
 				803E3EBB055B6F1C161E71E9 /* XCRemoteSwiftPackageReference "Runestone" */,
 				21BE8ADEADB6191676A9B4DB /* XCRemoteSwiftPackageReference "TreeSitterLanguages" */,
-				E150FD2D1707DCAA2E8CC8A6 /* XCRemoteSwiftPackageReference "YAML" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = CB0BA4112FA6272C00E37B2C /* Products */;
@@ -428,7 +424,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Everywhere/Everywhere.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 6;
 				DEVELOPMENT_TEAM = C7AS5D38Q8;
 				ENABLE_PREVIEWS = YES;
 				FRAMEWORK_SEARCH_PATHS = (
@@ -470,7 +466,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Everywhere/Everywhere.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 6;
 				DEVELOPMENT_TEAM = C7AS5D38Q8;
 				ENABLE_PREVIEWS = YES;
 				FRAMEWORK_SEARCH_PATHS = (
@@ -510,7 +506,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = EverywhereNE/EverywhereNE.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 6;
 				DEVELOPMENT_TEAM = C7AS5D38Q8;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -544,7 +540,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = EverywhereNE/EverywhereNE.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 6;
 				DEVELOPMENT_TEAM = C7AS5D38Q8;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -622,14 +618,6 @@
 				minimumVersion = 0.5.0;
 			};
 		};
-		E150FD2D1707DCAA2E8CC8A6 /* XCRemoteSwiftPackageReference "YAML" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/Argsment/YAML";
-			requirement = {
-				branch = main;
-				kind = branch;
-			};
-		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -647,11 +635,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 21BE8ADEADB6191676A9B4DB /* XCRemoteSwiftPackageReference "TreeSitterLanguages" */;
 			productName = TreeSitterJSONRunestone;
-		};
-		E21B044589BA804B1F939340 /* YAML */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = E150FD2D1707DCAA2E8CC8A6 /* XCRemoteSwiftPackageReference "YAML" */;
-			productName = YAML;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

@@ -6,25 +6,32 @@
 //
 
 import Foundation
-import YAML
 
 // Rewrites the user's config so that, regardless of what they put in it,
-// the active core ends up listening on socks5://127.0.0.1:10808 — the
-// address PacketTunnelProvider hands to tun2socks. For Xray and sing-box
-// we strip any inbound that would collide on the canonical port (either
-// the one we previously appended, matched by tag, or one the user wrote
-// that happens to listen on 10808 — sing-box would otherwise fail to
-// bind with "address already in use") and then append our own. For
-// mihomo we just force socks-port, which is the only knob it exposes.
+// the active core ends up consuming the iOS NEPacketTunnelProvider's utun
+// directly via a TUN inbound. Each core handles the FD differently (Xray
+// reads `xray.tun.fd` env, sing-box reads it via an injected
+// adapter.PlatformInterface, mihomo reads it from `tun.file-descriptor`),
+// so this file only ensures the *declaration* of the inbound is present
+// with consistent MTU/address/stack — the FD itself is plumbed by
+// EverywhereCore at start time.
+//
+// Strategy: strip any user-declared TUN inbound that would conflict
+// (matched by tag for the ones we previously appended, or by being a
+// TUN type), then append our canonical one. For mihomo we replace the
+// top-level `tun` mapping outright since YAML only allows one.
 enum ConfigNormalizer {
-    static let socksHost = "127.0.0.1"
-    static let socksPort = 10808
-    static let everywhereTag = "everywhere-socks"
+    static let tunnelHost = "198.18.0.1"
+    static let tunnelPrefix = "198.18.0.1/16"
+    static let tunnelHost6 = "fd00::1"
+    static let tunnelPrefix6 = "fd00::1/126"
+    static let tunnelMTU = 1500
+    static let everywhereTag = "everywhere-tun"
+    static let tunStack = "gvisor"
 
     enum NormalizeError: LocalizedError {
         case notUTF8
         case jsonRootNotObject
-        case yamlRootNotMap
         case parseFailed(String)
         case serializeFailed(String)
 
@@ -32,7 +39,6 @@ enum ConfigNormalizer {
             switch self {
             case .notUTF8: return "Configuration is not UTF-8."
             case .jsonRootNotObject: return "JSON root must be an object."
-            case .yamlRootNotMap: return "YAML root must be a mapping."
             case .parseFailed(let m): return "Could not parse configuration: \(m)"
             case .serializeFailed(let m): return "Could not serialize configuration: \(m)"
             }
@@ -43,64 +49,133 @@ enum ConfigNormalizer {
         switch core {
         case .xray: return try normalizeXray(content)
         case .singbox: return try normalizeSingBox(content)
-        case .mihomo: return try normalizeMihomo(content)
+        case .mihomo: return normalizeMihomo(content)
         }
     }
 
     // MARK: - Xray (JSON)
+    //
+    // Xray's TUN inbound docs say port/listen are ignored for protocol
+    // "tun". `name` is required by the schema and used on macOS to pick
+    // a utunN device — on iOS it's overridden by the FD coming through
+    // the `xray.tun.fd` env var, but the schema still wants a value.
 
     static func normalizeXray(_ content: String) throws -> String {
         var root = try parseJSONObject(content)
         var inbounds = (root["inbounds"] as? [[String: Any]]) ?? []
-        inbounds.removeAll { conflictsOnSocksPort($0, portKey: "port") }
+        inbounds.removeAll { isEverywhereOrTunInbound($0, typeKey: "protocol") }
         inbounds.append([
             "tag": everywhereTag,
-            "port": socksPort,
-            "listen": socksHost,
-            "protocol": "socks",
-            "settings": ["udp": true, "auth": "noauth"],
+            "protocol": "tun",
+            "settings": [
+                "name": "utun",
+                "MTU": tunnelMTU,
+            ],
         ])
         root["inbounds"] = inbounds
         return try serializeJSON(root)
     }
 
     // MARK: - sing-box (JSON)
+    //
+    // The TUN fd is injected via adapter.PlatformInterface in Go, which
+    // means the JSON only has to declare the inbound shape. `address`
+    // takes a list of IPv4 and IPv6 prefixes; we use the same values
+    // as NEPacketTunnelNetworkSettings so sing-box's gvisor stack can
+    // compute matching gateway addresses.
 
     static func normalizeSingBox(_ content: String) throws -> String {
         var root = try parseJSONObject(content)
         var inbounds = (root["inbounds"] as? [[String: Any]]) ?? []
-        inbounds.removeAll { conflictsOnSocksPort($0, portKey: "listen_port") }
+        inbounds.removeAll { isEverywhereOrTunInbound($0, typeKey: "type") }
         inbounds.append([
-            "type": "socks",
+            "type": "tun",
             "tag": everywhereTag,
-            "listen": socksHost,
-            "listen_port": socksPort,
+            "address": [tunnelPrefix, tunnelPrefix6],
+            "mtu": tunnelMTU,
+            "stack": tunStack,
         ])
         root["inbounds"] = inbounds
         return try serializeJSON(root)
     }
 
-    private static func conflictsOnSocksPort(_ inbound: [String: Any], portKey: String) -> Bool {
+    private static func isEverywhereOrTunInbound(_ inbound: [String: Any], typeKey: String) -> Bool {
         if (inbound["tag"] as? String) == everywhereTag { return true }
-        if let p = inbound[portKey] as? Int, p == socksPort { return true }
-        if let p = inbound[portKey] as? String, p == String(socksPort) { return true }
+        if (inbound[typeKey] as? String)?.lowercased() == "tun" { return true }
         return false
     }
 
     // MARK: - mihomo (YAML)
+    //
+    // mihomo's YAML grammar is loose — it tolerates duplicate keys,
+    // mixed tabs/spaces, and other shapes a strict parser rejects. We
+    // don't want to gatekeep the user's config, so instead of round-
+    // tripping through a parser we excise any column-0 `tun:` block
+    // (line + indented continuation) and append our own. This leaves
+    // the rest of the document byte-identical to the user's input.
+    //
+    // The user's tun block, if any, ends at the first line that has
+    // non-whitespace content at column 0 — comments and blank lines
+    // mid-block don't terminate it, matching YAML's own indentation
+    // rule that block scope is whatever's *more* indented than the
+    // mapping key.
 
-    static func normalizeMihomo(_ content: String) throws -> String {
-        let root: Node
-        do {
-            root = try YAML.load(content)
-        } catch {
-            throw NormalizeError.parseFailed(error.localizedDescription)
+    static func normalizeMihomo(_ content: String) -> String {
+        let normalized = content
+            .replacingOccurrences(of: "\r\n", with: "\n")
+            .replacingOccurrences(of: "\r", with: "\n")
+        var output: [String] = []
+        var skipping = false
+
+        for line in normalized.components(separatedBy: "\n") {
+            if skipping {
+                if isColumnZeroContent(line) {
+                    skipping = false
+                    output.append(line)
+                }
+                continue
+            }
+            if isTunKeyLine(line) {
+                skipping = true
+                continue
+            }
+            output.append(line)
         }
-        guard root.isMap else { throw NormalizeError.yamlRootNotMap }
-        // mihomo only binds one socks-port; force ours.
-        root["socks-port"] = yamlScalar(String(socksPort))
-        root["bind-address"] = yamlScalar(socksHost)
-        return YAML.dump(root)
+
+        if let last = output.last, !last.isEmpty {
+            output.append("")
+        }
+        output.append(contentsOf: [
+            "tun:",
+            "  enable: true",
+            "  stack: \(tunStack)",
+            "  mtu: \(tunnelMTU)",
+            "  inet4-address:",
+            "    - \(tunnelPrefix)",
+            "  inet6-address:",
+            "    - \(tunnelPrefix6)",
+        ])
+        return output.joined(separator: "\n")
+    }
+
+    // True when the line declares a top-level `tun` key. Matches
+    // `tun:`, `tun: <value>`, `tun:  # comment`, etc. — but not
+    // `tunnel:`, `  tun:` (nested), or `tun-foo:`.
+    private static func isTunKeyLine(_ line: String) -> Bool {
+        guard line.hasPrefix("tun:") else { return false }
+        let rest = line.dropFirst(4)
+        guard let next = rest.first else { return true }
+        return next == " " || next == "\t" || next == "#"
+    }
+
+    // True when the line has non-whitespace content at column 0 that
+    // isn't a comment. Inside a block we treat blank lines and column-0
+    // comments as still inside; only real content resumes the document.
+    private static func isColumnZeroContent(_ line: String) -> Bool {
+        guard let first = line.first else { return false }
+        if first == " " || first == "\t" { return false }
+        if first == "#" { return false }
+        return true
     }
 
     // MARK: - Helpers
@@ -130,11 +205,5 @@ enum ConfigNormalizer {
             throw NormalizeError.serializeFailed(error.localizedDescription)
         }
         return String(decoding: data, as: UTF8.self)
-    }
-
-    private static func yamlScalar(_ s: String) -> Node {
-        let n = Node()
-        n.set(s)
-        return n
     }
 }
