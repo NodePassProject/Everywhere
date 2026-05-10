@@ -74,7 +74,12 @@ func StartCore(coreType, configContent string, tunFD, mtu int) error {
 		return fmt.Errorf("unknown core type: %s", coreType)
 	}
 	if err != nil {
-		return err
+		// gomobile's seq.ToRefNum boxes returned errors via a map keyed
+		// by the value itself, which panics on non-comparable types
+		// (e.g. mihomo's constant.ErrNotSafePath has a []string field).
+		// Flatten to a plain *errorString so Swift gets the message
+		// instead of the NE process crashing.
+		return errors.New(err.Error())
 	}
 	coreInstance = r
 	return nil

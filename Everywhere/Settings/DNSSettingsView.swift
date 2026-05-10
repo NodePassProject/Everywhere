@@ -19,7 +19,10 @@ struct DNSSettingsView: View {
     @ObservedObject private var appState = AppState.shared
     @State private var serverDrafts: [DNSServerDraft] = []
     
-    private var isEditing: Bool? { editMode?.wrappedValue.isEditing }
+    private var isEditing: Bool {
+        if editMode?.wrappedValue.isEditing == true { return true }
+        return false
+    }
 
     var body: some View {
         Form {
@@ -42,15 +45,6 @@ struct DNSSettingsView: View {
                     serverDrafts.move(fromOffsets: source, toOffset: destination)
                     save()
                 }
-                if isEditing == true {
-                    Button {
-                        withAnimation {
-                            serverDrafts.append(DNSServerDraft(value: ""))
-                        }
-                    } label: {
-                        Label("Add", systemImage: "plus")
-                    }
-                }
             }
 
             Section {
@@ -68,7 +62,9 @@ struct DNSSettingsView: View {
         }
         .onAppear { loadInitial() }
         .onChange(of: isEditing) { newValue in
-            if newValue == false {
+            if newValue {
+                serverDrafts.append(DNSServerDraft(value: ""))
+            } else {
                 save()
             }
         }
@@ -79,6 +75,8 @@ struct DNSSettingsView: View {
     }
 
     private func save() {
+        serverDrafts = serverDrafts
+            .filter { !$0.value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
         let servers = serverDrafts
             .map { $0.value.trimmingCharacters(in: .whitespacesAndNewlines) }
         appState.dnsServers = servers

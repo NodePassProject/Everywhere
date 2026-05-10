@@ -96,6 +96,28 @@ enum ConfigNormalizer {
             "stack": tunStack,
         ])
         root["inbounds"] = inbounds
+
+        // Strip outbound interface-binding options from `route`. Both
+        // would have sing-box's dialer pin sockets to a specific
+        // physical interface:
+        //
+        //  - `auto_detect_interface` routes through
+        //    `NetworkManager.AutoDetectInterfaceFunc`, which consults
+        //    our no-op DefaultInterfaceMonitor and fails with
+        //    ErrNoRoute.
+        //  - `default_interface` names a specific NIC (e.g. "en0"),
+        //    which inside an NEPacketTunnelProvider may resolve to
+        //    something that doesn't behave as expected.
+        //
+        // iOS already routes sockets created inside the NE through
+        // the underlying physical interface, so neither option is
+        // needed. Remove unconditionally.
+        if var route = root["route"] as? [String: Any] {
+            route.removeValue(forKey: "auto_detect_interface")
+            route.removeValue(forKey: "default_interface")
+            root["route"] = route
+        }
+
         return try serializeJSON(root)
     }
 
