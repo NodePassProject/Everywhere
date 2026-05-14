@@ -1,6 +1,15 @@
 {
-  "originHash" : "42fe9f92aec0d9b304ca98f22c55e85ccfe8be59d0aa85799f11ba1e56a337fd",
+  "originHash" : "3879fc504fb69402ece5dcff014b625487e82b23a85d61c90395814217c662c4",
   "pins" : [
+    {
+      "identity" : "everywherecore",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/NodePassProject/EverywhereCore",
+      "state" : {
+        "revision" : "284f00ec3bdccb7642953ae58b3d5add71ae58ce",
+        "version" : "2026.5.14"
+      }
+    },
     {
       "identity" : "runestone",
       "kind" : "remoteSourceControl",
@@ -26,6 +35,15 @@
       "state" : {
         "revision" : "15cf3a9ec3ab95e0d058b7df9f35619123c9e02d",
         "version" : "0.1.10"
+      }
+    },
+    {
+      "identity" : "yaml",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Argsment/YAML",
+      "state" : {
+        "branch" : "main",
+        "revision" : "1cc58b32e84fa7259a49b046072fa3a44701e4b7"
       }
     }
   ],

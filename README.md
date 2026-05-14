@@ -60,9 +60,10 @@ you move between them whenever you like.
 - **Native Network Extension** — `NEPacketTunnelProvider` owns the
   `utun` device; the extension and the app share configurations through
   an App Group container
-- **gomobile-built framework** — Xray, sing-box, and mihomo compile into
-  a single `EverywhereCore.xcframework` via `gomobile bind`, stripped
-  with `-ldflags="-s -w"` so archive validation never demands a dSYM
+- **Prebuilt `EverywhereCore.xcframework`** — Xray, sing-box, and mihomo
+  are compiled upstream by
+  [NodePassProject/EverywhereCore](https://github.com/NodePassProject/EverywhereCore)
+  and consumed as a SwiftPM binary target pinned to a daily-rolled tag
 - **Tree-sitter editor** — [Runestone](https://github.com/simonbs/Runestone)
   with the JSON and YAML grammars compiled in
 - **Bundled web dashboard** — yacd is served from the app bundle via a
@@ -79,10 +80,11 @@ cd Everywhere
 open Everywhere.xcodeproj
 ```
 
-`build.sh` fetches the upstream sources at their pinned tags, builds
-the Go core into a framework with the right `with_*` tag matrix, and
-wires it into the Xcode project. Then plug in your signing identity and
-run on a device or the simulator.
+`build.sh` builds the bundled yacd dashboard and wires the
+`EverywhereCore` SwiftPM dependency + Runestone + yacd resources into
+the Xcode project. The Go cores themselves are downloaded as a prebuilt
+xcframework by SwiftPM on first resolve. Plug in your signing identity
+and run on a device or the simulator.
 
 To run an `xcodebuild` simulator smoke test as the final step:
 
@@ -92,12 +94,14 @@ To run an `xcodebuild` simulator smoke test as the final step:
 
 ## Patches & Upstream Tracking
 
-Every change made on top of upstream sources, every build-tag decision,
-and every wiring quirk per core is documented in
-[`PATCHES.md`](PATCHES.md). When bumping an upstream tag, walk that
-file. Right now all three upstreams build unmodified at the pinned
-tags — the only patches are `go.mod` overrides and `gomobile`
-mechanics.
+The Go cores live in their own repository,
+[NodePassProject/EverywhereCore](https://github.com/NodePassProject/EverywhereCore),
+which a daily GitHub Actions job auto-releases against the latest
+upstream tags. Tag matrix, `gomobile bind` mechanics, and per-core
+wiring quirks are documented there. Consumer-side notes for this app
+(deployment target, `libresolv.tbd`, yacd folder reference) live in
+[`PATCHES.md`](PATCHES.md). Bump `EVERYWHERE_CORE_VERSION` in
+`Scripts/wire_project.rb` and re-run `./build.sh` to roll forward.
 
 ## Acknowledgements
 

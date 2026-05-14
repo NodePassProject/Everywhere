@@ -16,6 +16,15 @@ import Foundation
 // with consistent MTU/address/stack — the FD itself is plumbed by
 // EverywhereCore at start time.
 //
+// We also pin the Clash RESTful API to 127.0.0.1:9090 with no
+// auth, no dashboard, and no CORS allow-list — that's the address
+// the host app attaches to for runtime queries, and a user-supplied
+// secret or non-loopback bind would otherwise lock us out. For
+// sing-box we overwrite `experimental.clash_api` with a single
+// `external_controller` field; for mihomo we strip the user's
+// top-level `external-controller*`, `external-ui*`,
+// `external-doh-server`, and `secret` keys and append our own.
+//
 // Strategy: strip any user-declared TUN inbound that would conflict
 // (matched by tag for the ones we previously appended, or by being a
 // TUN type), then append our canonical one. For mihomo we replace the
@@ -28,6 +37,7 @@ enum ConfigNormalizer {
     static let tunnelMTU = 1500
     static let everywhereTag = "everywhere-tun"
     static let tunStack = "gvisor"
+    static let clashAPIAddress = "127.0.0.1:9090"
 
     enum NormalizeError: LocalizedError {
         case notUTF8
@@ -118,6 +128,16 @@ enum ConfigNormalizer {
             root["route"] = route
         }
 
+        // Pin the Clash API to 127.0.0.1:9090 and discard every other
+        // `clash_api` option (external_ui, secret, default_mode,
+        // access_control_*, …). The host app attaches to the
+        // controller by hitting this exact address; a user-supplied
+        // secret or non-loopback bind would lock us out. Leave any
+        // sibling `experimental.*` blocks (e.g. `cache_file`) alone.
+        var experimental = (root["experimental"] as? [String: Any]) ?? [:]
+        experimental["clash_api"] = ["external_controller": clashAPIAddress]
+        root["experimental"] = experimental
+
         return try serializeJSON(root)
     }
 
@@ -132,15 +152,20 @@ enum ConfigNormalizer {
     // mihomo's YAML grammar is loose — it tolerates duplicate keys,
     // mixed tabs/spaces, and other shapes a strict parser rejects. We
     // don't want to gatekeep the user's config, so instead of round-
-    // tripping through a parser we excise any column-0 `tun:` block
-    // (line + indented continuation) and append our own. This leaves
-    // the rest of the document byte-identical to the user's input.
+    // tripping through a parser we excise any column-0 block whose
+    // top-level key we own (`tun:`, plus the Clash-API surface:
+    // `external-controller(-tls|-unix|-pipe|-cors)?`, `external-ui*`,
+    // `external-doh-server`, `secret`) and append our canonical
+    // versions. This leaves the rest of the document byte-identical
+    // to the user's input.
     //
-    // The user's tun block, if any, ends at the first line that has
-    // non-whitespace content at column 0 — comments and blank lines
-    // mid-block don't terminate it, matching YAML's own indentation
-    // rule that block scope is whatever's *more* indented than the
-    // mapping key.
+    // A stripped block ends at the first line that has non-whitespace
+    // content at column 0 — comments and blank lines mid-block don't
+    // terminate it, matching YAML's own indentation rule that block
+    // scope is whatever's *more* indented than the mapping key. When
+    // a stripped block ends, the resuming column-0 line is re-checked
+    // against the strip-set so back-to-back stripped keys all get
+    // caught.
 
     static func normalizeMihomo(_ content: String) -> String {
         let normalized = content
@@ -151,13 +176,13 @@ enum ConfigNormalizer {
 
         for line in normalized.components(separatedBy: "\n") {
             if skipping {
-                if isColumnZeroContent(line) {
-                    skipping = false
-                    output.append(line)
-                }
-                continue
+                guard isColumnZeroContent(line) else { continue }
+                skipping = false
+                // Re-check the resuming line against the strip-set
+                // below so back-to-back stripped blocks all get
+                // caught.
             }
-            if isTunKeyLine(line) {
+            if matchesStrippedTopLevelKey(line) {
                 skipping = true
                 continue
             }
@@ -176,16 +201,42 @@ enum ConfigNormalizer {
             "    - \(tunnelPrefix)",
             "  inet6-address:",
             "    - \(tunnelPrefix6)",
+            "external-controller: \(clashAPIAddress)",
         ])
         return output.joined(separator: "\n")
     }
 
-    // True when the line declares a top-level `tun` key. Matches
-    // `tun:`, `tun: <value>`, `tun:  # comment`, etc. — but not
-    // `tunnel:`, `  tun:` (nested), or `tun-foo:`.
-    private static func isTunKeyLine(_ line: String) -> Bool {
-        guard line.hasPrefix("tun:") else { return false }
-        let rest = line.dropFirst(4)
+    // Top-level keys we own and replace wholesale in the user's
+    // config. `tun` is our utun declaration; the rest are the Clash
+    // RESTful API surface that we pin via a single
+    // `external-controller`.
+    private static let strippedTopLevelKeys: [String] = [
+        "tun",
+        "external-controller",
+        "external-controller-tls",
+        "external-controller-unix",
+        "external-controller-pipe",
+        "external-controller-cors",
+        "external-ui",
+        "external-ui-url",
+        "external-ui-name",
+        "external-doh-server",
+        "secret",
+    ]
+
+    private static func matchesStrippedTopLevelKey(_ line: String) -> Bool {
+        for key in strippedTopLevelKeys {
+            if matchesTopLevelKey(line, key: key) { return true }
+        }
+        return false
+    }
+
+    // True when the line declares a top-level mapping with the given
+    // key. Matches `key:`, `key: <value>`, `key:  # comment`, etc.
+    // — but not `keyfoo:`, `  key:` (nested), or `# key:` (comment).
+    private static func matchesTopLevelKey(_ line: String, key: String) -> Bool {
+        guard line.hasPrefix(key + ":") else { return false }
+        let rest = line.dropFirst(key.count + 1)
         guard let next = rest.first else { return true }
         return next == " " || next == "\t" || next == "#"
     }
