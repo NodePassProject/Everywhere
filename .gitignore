@@ -1,5 +1,4 @@
 # Build artifacts
-Frameworks/EverywhereCore.xcframework/
 build*.log
 DerivedData/
 *.xcuserdatad/
@@ -7,9 +6,6 @@ xcuserdata/
 
 # Upstream sources are reproducible from Scripts/fetch_third_party.sh
 ThirdParty/
-
-# Go
-EverywhereCore/build.err
 
 # macOS
 .DS_Store
