@@ -14,6 +14,12 @@ Everywhere is a powerful proxy and tunneling app for iOS that puts you in
 charge of how your device talks to the internet. Bring your own
 configuration, pick the engine you trust, and flip a switch. That's it.
 
+<div>
+    <a href="https://apps.apple.com/app/id6766003090">
+        <img width="128" src="https://storage.argsment.com/Download%20on%20the%20App%20Store.png" />
+    </a>
+</div>
+
 </div>
 
 ---
