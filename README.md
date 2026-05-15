@@ -130,7 +130,7 @@ Huge thanks to everyone who maintains them.
 
 Everywhere is licensed under the [GNU General Public License v3.0](LICENSE).
 
-Copyright © 2026 Argsment Limited.
+Copyright © 2026 NodePassProject.
 
 If you ship a modification, ship the source too. That's the deal.
 
