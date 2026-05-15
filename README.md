@@ -1,7 +1,9 @@
 <div align="center">
 
 <div>
-    <img width="100" height="100" alt="Everywhere" src="https://storage.argsment.com/Everywhere-AppIcon-iOS.png" />
+    <a href="https://apps.apple.com/app/id6766003090">
+        <img width="100" height="100" alt="Everywhere" src="https://storage.argsment.com/Everywhere-AppIcon-iOS.png" />
+    </a>
 </div>
 
 # Everywhere
@@ -30,8 +32,10 @@ you move between them whenever you like.
 - **Xray-core** `v26.3.27` — battle-tested VLESS / VMess / Trojan /
   Shadowsocks with the full XTLS / Reality / XHTTP transport matrix
 - **sing-box** `v1.13.11` — modern modular core with a strong rule
-  engine, built with the full `with_*` tag matrix (QUIC, gVisor, uTLS,
-  WireGuard, Tailscale, ACME, gRPC, clash API, v2ray stats…)
+  engine, built with the client-relevant `with_*` tags (`clash_api`,
+  `grpc`, `gvisor`, `quic`, `utls`, `wireguard`); inbound/server-only
+  and big-tree extras (Tailscale, ACME, v2ray stats, DHCP DNS) are
+  dropped upstream
 - **mihomo** `v1.19.24` — Clash-flavored ergonomics with rich proxy
   groups, fake-IP, and rule providers
 - **Live core switching** — change engines from the Home tab whenever
@@ -50,10 +54,15 @@ you move between them whenever you like.
 - **Per-core configuration lists** — your Xray setups don't get mixed
   up with your mihomo ones
 - **zashboard** — bundled Clash dashboard for live traffic, proxy
-  groups, and rule inspection (works with sing-box and mihomo)
+  groups, and rule inspection (works with sing-box and mihomo; Xray
+  has no clash API)
 - **Resource management** — drop `geoip.dat`, `geosite.dat`, `ASN.mmdb`,
   cache files, or PEMs into per-core resource folders; each engine sees
   them in the right place automatically
+- **Always-On** — opt in to an `NEOnDemandRuleConnect` rule so iOS
+  brings the tunnel back up after a reboot or network flap
+- **Custom DNS** — set the resolvers the `NEPacketTunnelNetworkSettings`
+  advertises to the system; defaults to `1.1.1.1` / `8.8.8.8`
 
 ### Architecture
 
