@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 # Wires the EverywhereCore SwiftPM package, the Runestone editor
-# packages, and the yacd-gh-pages resource bundle into
+# packages, and the zashboard dashboard resource bundle into
 # Everywhere.xcodeproj (iOS). Idempotent — running it twice is safe.
 #
 # EverywhereCore ships as a prebuilt xcframework on GitHub Releases;
@@ -9,9 +9,10 @@
 
 require 'xcodeproj'
 
-PROJECT_PATH = File.expand_path('../Everywhere.xcodeproj', __dir__)
-YACD_REL_PATH = 'ThirdParty/yacd-gh-pages'
-DEPLOYMENT_TARGET = '15.0'
+PROJECT_PATH       = File.expand_path('../Everywhere.xcodeproj', __dir__)
+DASHBOARD_REL_PATH = 'ThirdParty/zashboard'
+DASHBOARD_NAME     = 'zashboard'
+DEPLOYMENT_TARGET  = '15.0'
 
 EVERYWHERE_CORE_REPO    = 'https://github.com/NodePassProject/EverywhereCore'
 EVERYWHERE_CORE_VERSION = '2026.05.14'
@@ -169,13 +170,17 @@ end
   end
 end
 
-# --- yacd-gh-pages folder reference (bundled into the app target) --------
+# --- zashboard folder reference (bundled into the app target) -----------
 # `lastKnownFileType = folder` is the magic that makes Xcode treat this
 # as a "blue folder" — it copies the whole tree into the .app preserving
-# relative paths, which yacd's index.html requires (./assets/index-*.js).
+# relative paths, which the dashboard's index.html requires
+# (./assets/index-*.js). Self-healing cleanup catches the legacy
+# yacd-gh-pages reference and any moved zashboard ref.
 project.files.select { |f|
   next false unless f.path
-  f.path.end_with?('yacd-gh-pages') && f.path != YACD_REL_PATH
+  basename = File.basename(f.path)
+  (basename == 'yacd-gh-pages' || basename == DASHBOARD_NAME) &&
+    f.path != DASHBOARD_REL_PATH
 }.each do |stale|
   project.targets.each do |t|
     t.resources_build_phase.files.select { |bf| bf.file_ref == stale }.each do |bf|
@@ -185,18 +190,18 @@ project.files.select { |f|
   stale.remove_from_project
 end
 
-yacd_ref = project.main_group.files.find { |f| f.path == YACD_REL_PATH }
-unless yacd_ref
-  yacd_ref = project.new(Xcodeproj::Project::Object::PBXFileReference)
-  yacd_ref.path = YACD_REL_PATH
-  yacd_ref.name = 'yacd-gh-pages'
-  yacd_ref.source_tree = 'SOURCE_ROOT'
-  yacd_ref.last_known_file_type = 'folder'
-  project.main_group << yacd_ref
+dashboard_ref = project.main_group.files.find { |f| f.path == DASHBOARD_REL_PATH }
+unless dashboard_ref
+  dashboard_ref = project.new(Xcodeproj::Project::Object::PBXFileReference)
+  dashboard_ref.path = DASHBOARD_REL_PATH
+  dashboard_ref.name = DASHBOARD_NAME
+  dashboard_ref.source_tree = 'SOURCE_ROOT'
+  dashboard_ref.last_known_file_type = 'folder'
+  project.main_group << dashboard_ref
 end
-unless app_target.resources_build_phase.files.any? { |bf| bf.file_ref == yacd_ref }
-  app_target.resources_build_phase.add_file_reference(yacd_ref)
+unless app_target.resources_build_phase.files.any? { |bf| bf.file_ref == dashboard_ref }
+  app_target.resources_build_phase.add_file_reference(dashboard_ref)
 end
 
 project.save
-puts "Wired EverywhereCore @ #{EVERYWHERE_CORE_VERSION} (SwiftPM) + Runestone + YAML + yacd-gh-pages into #{PROJECT_PATH}"
+puts "Wired EverywhereCore @ #{EVERYWHERE_CORE_VERSION} (SwiftPM) + Runestone + YAML + zashboard into #{PROJECT_PATH}"

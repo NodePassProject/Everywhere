@@ -51,11 +51,12 @@ an Xcode UI edit reasserts them.
   Adding the product to a Copy Files phase by `productRef` double-
   resolves and fails with `No such file or directory` on the bare
   product name.
-- `yacd-gh-pages` registered as a folder reference (blue folder,
+- `ThirdParty/zashboard` registered as a folder reference (blue folder,
   `lastKnownFileType = folder`) on the app target's Resources phase —
-  yacd's `index.html` references its bundled assets via relative paths
-  (`./assets/index-*.js`), which only works if Xcode preserves the
-  directory layout on copy.
+  zashboard's `index.html` references its bundled assets via relative
+  paths (`./assets/index-*.js`), which only works if Xcode preserves
+  the directory layout on copy. The release build is checked into the
+  repo as a static bundle; there is no source build step.
 
 ## NEPacketTunnelProvider on iOS
 
