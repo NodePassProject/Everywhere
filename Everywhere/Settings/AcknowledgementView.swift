@@ -95,10 +95,10 @@ struct Acknowledgement: Identifiable {
             """
         ),
         Acknowledgement(
-            name: "Yacd-meta",
-            url: URL(string: "https://github.com/MetaCubeX/Yacd-meta")!,
+            name: "zashboard",
+            url: URL(string: "https://github.com/Zephyruso/zashboard")!,
             license: "MIT",
-            licenseText: Licenses.mit(copyright: "Copyright (c) 2019 Haishan Hu")
+            licenseText: Licenses.mit(copyright: "Copyright (c) 2024 Zephyruso")
         ),
         Acknowledgement(
             name: "Runestone",

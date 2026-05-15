@@ -14,8 +14,8 @@ import Foundation
 // here (a duplicate would conflict with ours).
 //
 // mihomo and sing-box also expose the clash-compat REST API on
-// 127.0.0.1:9090 — that's the address the bundled yacd dashboard
-// (Controller tab) talks to. Xray-core has no clash API.
+// 127.0.0.1:9090 — that's the address the bundled zashboard
+// (Dashboard tab) talks to. Xray-core has no clash API.
 enum ExampleConfigs {
     static let xray = #"""
     {

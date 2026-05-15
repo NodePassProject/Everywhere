@@ -17,7 +17,7 @@
 		8DA46DEAF1392B6586DBC9FC /* libresolv.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = AD2724A4F89A96B133F540CB /* libresolv.tbd */; };
 		CB0BA4282FA6277800E37B2C /* NetworkExtension.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CB0BA4272FA6277800E37B2C /* NetworkExtension.framework */; };
 		CB0BA4302FA6277800E37B2C /* EverywhereNE.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = CB0BA4252FA6277800E37B2C /* EverywhereNE.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		CB0BA5672FA7059300E37B2C /* yacd-gh-pages in Resources */ = {isa = PBXBuildFile; fileRef = CB0BA5662FA7059300E37B2C /* yacd-gh-pages */; };
+		E21CF12D020F260C78EF147B /* zashboard in Resources */ = {isa = PBXBuildFile; fileRef = 1197532FC5218FEC63D188EA /* zashboard */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -45,11 +45,11 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		1197532FC5218FEC63D188EA /* zashboard */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder; name = zashboard; path = ThirdParty/zashboard; sourceTree = SOURCE_ROOT; };
 		AD2724A4F89A96B133F540CB /* libresolv.tbd */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libresolv.tbd; path = usr/lib/libresolv.tbd; sourceTree = SDKROOT; };
 		CB0BA4102FA6272C00E37B2C /* Everywhere.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Everywhere.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		CB0BA4252FA6277800E37B2C /* EverywhereNE.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = EverywhereNE.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		CB0BA4272FA6277800E37B2C /* NetworkExtension.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = NetworkExtension.framework; path = System/Library/Frameworks/NetworkExtension.framework; sourceTree = SDKROOT; };
-		CB0BA5662FA7059300E37B2C /* yacd-gh-pages */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "yacd-gh-pages"; path = "ThirdParty/yacd-gh-pages"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -120,9 +120,9 @@
 			children = (
 				CB0BA4122FA6272C00E37B2C /* Everywhere */,
 				CB0BA4292FA6277800E37B2C /* EverywhereNE */,
-				CB0BA5662FA7059300E37B2C /* yacd-gh-pages */,
 				CB0BA4262FA6277800E37B2C /* Frameworks */,
 				CB0BA4112FA6272C00E37B2C /* Products */,
+				1197532FC5218FEC63D188EA /* zashboard */,
 			);
 			sourceTree = "<group>";
 		};
@@ -249,7 +249,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				CB0BA5672FA7059300E37B2C /* yacd-gh-pages in Resources */,
+				E21CF12D020F260C78EF147B /* zashboard in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Top-level: fetch yacd dashboard → wire project. The Go cores ship as a
-# prebuilt xcframework via the EverywhereCore SwiftPM package, so there
-# is no local Go build step anymore.
+# Top-level: wire the Xcode project. The zashboard dashboard is checked
+# into ThirdParty/zashboard/ as a prebuilt static bundle, and the Go
+# cores ship as a prebuilt xcframework via the EverywhereCore SwiftPM
+# package — so there is no local source build step.
 #
 # Pass `--build-app` as a final step to also run `xcodebuild` for the
 # iOS Simulator as a smoke test.
@@ -10,7 +11,6 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT"
 
-bash Scripts/fetch_third_party.sh
 ruby Scripts/wire_project.rb
 
 if [[ "${1:-}" == "--build-app" ]]; then

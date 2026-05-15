@@ -49,7 +49,7 @@ you move between them whenever you like.
   a URL and let the app fetch it
 - **Per-core configuration lists** — your Xray setups don't get mixed
   up with your mihomo ones
-- **yacd dashboard** — bundled Clash dashboard for live traffic, proxy
+- **zashboard** — bundled Clash dashboard for live traffic, proxy
   groups, and rule inspection (works with sing-box and mihomo)
 - **Resource management** — drop `geoip.dat`, `geosite.dat`, `ASN.mmdb`,
   cache files, or PEMs into per-core resource folders; each engine sees
@@ -66,8 +66,8 @@ you move between them whenever you like.
   and consumed as a SwiftPM binary target pinned to a daily-rolled tag
 - **Tree-sitter editor** — [Runestone](https://github.com/simonbs/Runestone)
   with the JSON and YAML grammars compiled in
-- **Bundled web dashboard** — yacd is served from the app bundle via a
-  custom `yacd://` URL scheme.
+- **Bundled web dashboard** — zashboard is served from the app bundle
+  via a custom `zashboard://` URL scheme.
 
 ## Getting Started
 
@@ -80,11 +80,12 @@ cd Everywhere
 open Everywhere.xcodeproj
 ```
 
-`build.sh` builds the bundled yacd dashboard and wires the
-`EverywhereCore` SwiftPM dependency + Runestone + yacd resources into
-the Xcode project. The Go cores themselves are downloaded as a prebuilt
-xcframework by SwiftPM on first resolve. Plug in your signing identity
-and run on a device or the simulator.
+`build.sh` wires the `EverywhereCore` SwiftPM dependency + Runestone +
+the bundled zashboard into the Xcode project. The Go cores themselves
+are downloaded as a prebuilt xcframework by SwiftPM on first resolve,
+and the zashboard is checked into `ThirdParty/zashboard/` as a prebuilt
+static bundle — no Node, no pnpm, no Vite step. Plug in your signing
+identity and run on a device or the simulator.
 
 To run an `xcodebuild` simulator smoke test as the final step:
 
@@ -99,8 +100,8 @@ The Go cores live in their own repository,
 which a daily GitHub Actions job auto-releases against the latest
 upstream tags. Tag matrix, `gomobile bind` mechanics, and per-core
 wiring quirks are documented there. Consumer-side notes for this app
-(deployment target, `libresolv.tbd`, yacd folder reference) live in
-[`PATCHES.md`](PATCHES.md). Bump `EVERYWHERE_CORE_VERSION` in
+(deployment target, `libresolv.tbd`, zashboard folder reference) live
+in [`PATCHES.md`](PATCHES.md). Bump `EVERYWHERE_CORE_VERSION` in
 `Scripts/wire_project.rb` and re-run `./build.sh` to roll forward.
 
 ## Acknowledgements
@@ -111,7 +112,7 @@ networking work:
 - [Xray-core](https://github.com/XTLS/Xray-core)
 - [sing-box](https://github.com/SagerNet/sing-box)
 - [mihomo](https://github.com/MetaCubeX/mihomo)
-- [yacd](https://github.com/MetaCubeX/Yacd-meta)
+- [zashboard](https://github.com/Zephyruso/zashboard)
 - [Runestone](https://github.com/simonbs/Runestone)
 
 Huge thanks to everyone who maintains them.

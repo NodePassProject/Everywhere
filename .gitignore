@@ -4,8 +4,5 @@ DerivedData/
 *.xcuserdatad/
 xcuserdata/
 
-# Upstream sources are reproducible from Scripts/fetch_third_party.sh
-ThirdParty/
-
 # macOS
 .DS_Store

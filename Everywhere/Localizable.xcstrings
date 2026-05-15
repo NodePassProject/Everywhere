@@ -93,6 +93,7 @@
       }
     },
     "Controller" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -504,6 +505,9 @@
           }
         }
       }
+    },
+    "Xray is running" : {
+
     }
   },
   "version" : "1.1"
