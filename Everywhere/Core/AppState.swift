@@ -19,6 +19,7 @@ final class AppState: ObservableObject {
         static let singboxConfig = "config.singbox"
         static let mihomoConfig = "config.mihomo"
         static let dnsServers = "dnsServers"
+        static let alwaysOnEnabled = "alwaysOnEnabled"
     }
 
     private let store = AppGroup.defaults
@@ -39,16 +40,24 @@ final class AppState: ObservableObject {
         didSet { store.set(mihomoConfig, forKey: Keys.mihomoConfig) }
     }
 
+    @Published var alwaysOnEnabled: Bool {
+        didSet { store.set(alwaysOnEnabled, forKey: Keys.alwaysOnEnabled) }
+    }
+
     @Published var dnsServers: [String] {
         didSet { store.set(dnsServers, forKey: Keys.dnsServers) }
     }
 
     private init() {
-        let raw = AppGroup.defaults.string(forKey: Keys.coreType) ?? CoreType.xray.rawValue
-        self.coreType = CoreType(rawValue: raw) ?? .xray
+        let rawCoreType = AppGroup.defaults.string(forKey: Keys.coreType) ?? CoreType.xray.rawValue
+        self.coreType = CoreType(rawValue: rawCoreType) ?? .xray
+        
         self.xrayConfig = AppGroup.defaults.string(forKey: Keys.xrayConfig) ?? ExampleConfigs.xray
         self.singboxConfig = AppGroup.defaults.string(forKey: Keys.singboxConfig) ?? ExampleConfigs.singbox
         self.mihomoConfig = AppGroup.defaults.string(forKey: Keys.mihomoConfig) ?? ExampleConfigs.mihomo
+        
+        self.alwaysOnEnabled = AppGroup.defaults.bool(forKey: Keys.alwaysOnEnabled)
+        
         let storedDNS = AppGroup.defaults.stringArray(forKey: Keys.dnsServers)
         self.dnsServers = (storedDNS?.isEmpty == false ? storedDNS! : Self.defaultDNSServers)
     }

@@ -16,6 +16,7 @@ final class TunnelManager: ObservableObject {
     @Published private(set) var isReady: Bool = false
     @Published private(set) var coreRunning: Bool = false
     @Published private(set) var lastError: String?
+    @Published private(set) var pendingReconnect: Bool = false
     private var manager: NETunnelProviderManager?
     private var statusObserver: AnyCancellable?
 
@@ -48,15 +49,31 @@ final class TunnelManager: ObservableObject {
             return
         }
         do {
-            let normalized = try ConfigNormalizer.normalize(configuration.content, for: configuration.coreType)
-            let m = try await ensureManager(coreType: configuration.coreType, configContent: normalized)
             if on {
+                let normalized = try ConfigNormalizer.normalize(configuration.content, for: configuration.coreType)
+                let m = try await ensureManager(coreType: configuration.coreType, configContent: normalized)
                 try m.connection.startVPNTunnel()
             } else {
-                m.connection.stopVPNTunnel()
+                // An explicit disable should never auto-reconnect.
+                pendingReconnect = false
+                try await disableTunnel()
             }
             lastError = nil
         } catch {
+            lastError = error.localizedDescription
+        }
+    }
+
+    /// Stop the running tunnel and let the status observer reconnect once
+    /// it transitions to `.disconnected`. Used when an Always-On change
+    /// needs the on-demand rules re-applied while the tunnel is up.
+    func reconnect() async {
+        guard manager != nil, status.isActive else { return }
+        do {
+            pendingReconnect = true
+            try await disableTunnel()
+        } catch {
+            pendingReconnect = false
             lastError = error.localizedDescription
         }
     }
@@ -78,10 +95,32 @@ final class TunnelManager: ObservableObject {
         m.protocolConfiguration = proto
         m.localizedDescription = AppGroup.tunnelDescription
         m.isEnabled = true
+
+        if AppState.shared.alwaysOnEnabled {
+            let rule = NEOnDemandRuleConnect()
+            rule.interfaceTypeMatch = .any
+            m.onDemandRules = [rule]
+            m.isOnDemandEnabled = true
+        } else {
+            m.onDemandRules = nil
+            m.isOnDemandEnabled = false
+        }
+
         try await m.saveToPreferences()
         try await m.loadFromPreferences()
         manager = m
         return m
+    }
+
+    /// Disable on-demand (so iOS doesn't immediately relaunch the NE) and
+    /// then stop the tunnel.
+    private func disableTunnel() async throws {
+        guard let m = manager else { return }
+        if m.isOnDemandEnabled {
+            m.isOnDemandEnabled = false
+            try await m.saveToPreferences()
+        }
+        m.connection.stopVPNTunnel()
     }
 
     private func setupStatusObserver() {
@@ -97,6 +136,13 @@ final class TunnelManager: ObservableObject {
                     self.queryCoreStatus()
                 } else {
                     self.coreRunning = false
+                    if (connection.status == .disconnected || connection.status == .invalid)
+                        && self.pendingReconnect {
+                        self.pendingReconnect = false
+                        if let active = ConfigurationStore.shared.active {
+                            Task { await self.setEnabled(true, configuration: active) }
+                        }
+                    }
                 }
             }
     }
