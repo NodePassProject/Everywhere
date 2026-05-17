@@ -199,7 +199,9 @@ struct ConfigurationsView: View {
         Task {
             defer { Task { @MainActor in isDownloading = false } }
             do {
-                let (data, response) = try await URLSession.shared.data(from: url)
+                var request = URLRequest(url: url)
+                request.setValue("Everywhere/1.0 Clash/1.11.0", forHTTPHeaderField: "User-Agent")
+                let (data, response) = try await URLSession.shared.data(for: request)
                 if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
                     throw NSError(
                         domain: "EverywhereDownload",

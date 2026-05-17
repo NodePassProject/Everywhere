@@ -42,7 +42,7 @@ enum ResourcesStoreError: LocalizedError {
 
 enum ResourcesStore {
     /// Per-core root directory (auto-created).
-    static func directory(for core: CoreType) -> URL { AppGroup.resourcesURL(for: core) }
+    static func directory(for core: CoreType) -> URL { EVCore.resourcesURL(for: core) }
 
     /// One-level listing of `url`: folders and regular files, folders first, then alpha within each group.
     static func list(at url: URL) throws -> [ResourceEntry] {
