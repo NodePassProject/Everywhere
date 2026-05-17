@@ -6,17 +6,25 @@ upstream at
 [NodePassProject/EverywhereCore](https://github.com/NodePassProject/EverywhereCore) —
 see its README and `Scripts/build.sh` if you need to touch the Go side.
 
-## Pinned EverywhereCore version
+## EverywhereCore version range
 
-`Scripts/wire_project.rb` pins the SwiftPM dependency to a single tag:
+`Scripts/wire_project.rb` pins the SwiftPM dependency to a calver range
+rather than an exact tag:
 
 ```ruby
-EVERYWHERE_CORE_VERSION = '2026.05.14'
+EVERYWHERE_CORE_MIN_VERSION = '2026.05.14'
+EVERYWHERE_CORE_REQ = { 'kind' => 'upToNextMajorVersion', 'minimumVersion' => EVERYWHERE_CORE_MIN_VERSION }
 ```
 
-Bump that string and rerun `./build.sh` to roll forward. The upstream
-ships a daily-rolled `vYYYY.MM.DD` tag whenever Xray / sing-box / mihomo
-release; pick the latest tag that has had time to soak.
+`upToNextMajor` against a `vYYYY.MM.DD` tag accepts every release inside
+the same calendar year, so a fresh `xcodebuild -resolvePackageDependencies`
+rolls forward to the newest daily tag automatically. Bump the floor only
+when the upstream drops a tag with a breaking-change marker or when you
+want to abandon stale releases. Tracking `branch main` is **not** a viable
+alternative here: upstream's main-branch `Package.swift` references a
+local `EverywhereCore.xcframework` path that only exists during their dev
+work — `Scripts/release.sh` rewrites it to `binaryTarget(url:, checksum:)`
+on each tag, so only tagged releases are consumable downstream.
 
 ## SwiftPM packages
 
@@ -24,7 +32,7 @@ release; pick the latest tag that has had time to soak.
 
 | Package                                                    | Targets   | Pin                          |
 | ---------------------------------------------------------- | --------- | ---------------------------- |
-| `NodePassProject/EverywhereCore`                           | app + NE  | `exactVersion 2026.05.14`    |
+| `NodePassProject/EverywhereCore`                           | app + NE  | `upToNextMajor 2026.05.17`   |
 | `simonbs/Runestone`                                        | app       | `upToNextMajor 0.5.0`        |
 | `simonbs/TreeSitterLanguages` (JSON + YAML products)       | app       | `upToNextMajor 0.1.10`       |
 | `Argsment/YAML`                                            | app       | `branch main`                |

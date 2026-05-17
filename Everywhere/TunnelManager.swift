@@ -50,8 +50,10 @@ final class TunnelManager: ObservableObject {
         }
         do {
             if on {
-                let normalized = try ConfigNormalizer.normalize(configuration.content, for: configuration.coreType)
-                let m = try await ensureManager(coreType: configuration.coreType, configContent: normalized)
+                let m = try await ensureManager(
+                    coreType: configuration.coreType,
+                    configID: configuration.id
+                )
                 try m.connection.startVPNTunnel()
             } else {
                 // An explicit disable should never auto-reconnect.
@@ -82,14 +84,17 @@ final class TunnelManager: ObservableObject {
         lastError = nil
     }
 
-    private func ensureManager(coreType: CoreType, configContent: String) async throws -> NETunnelProviderManager {
+    private func ensureManager(coreType: CoreType, configID: UUID) async throws -> NETunnelProviderManager {
         let m = manager ?? NETunnelProviderManager()
         let proto = (m.protocolConfiguration as? NETunnelProviderProtocol) ?? NETunnelProviderProtocol()
         proto.providerBundleIdentifier = AppGroup.extensionBundleID
         proto.serverAddress = "Everywhere"
+        // Carry only metadata — iOS caps providerConfiguration at 512 KB,
+        // and large rulesets blow past that. The NE reads the active
+        // config's `content` directly from the shared Core Data store.
         proto.providerConfiguration = [
             "coreType": coreType.rawValue,
-            "configContent": configContent,
+            "configID": configID.uuidString,
             "dnsServers": AppState.shared.dnsServers
         ]
         m.protocolConfiguration = proto
