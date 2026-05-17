@@ -23,6 +23,7 @@ final class PersistenceController {
         // the config blob shipped through providerConfiguration,
         // which iOS caps at 512 KB.
         let storeURL = AppGroup.containerURL.appendingPathComponent("Everywhere.sqlite")
+        Self.migrateLegacyStoreIfNeeded(to: storeURL, model: model)
         container.persistentStoreDescriptions = [NSPersistentStoreDescription(url: storeURL)]
 
         container.loadPersistentStores { _, error in
@@ -31,6 +32,60 @@ final class PersistenceController {
             }
         }
         container.viewContext.automaticallyMergesChangesFromParent = true
+    }
+
+    // Pre-1.1(10) builds wrote the SQLite to NSPersistentContainer's
+    // default directory inside the app sandbox. The NE can't reach
+    // that path, so 1.1(10) moved the store into the App Group
+    // container — which silently left every existing user looking
+    // at an empty database. Copy the legacy file over on first
+    // launch. If a 1.1(10) launch already created an empty store
+    // at the new path, replace it.
+    private static func migrateLegacyStoreIfNeeded(to newURL: URL, model: NSManagedObjectModel) {
+        let fm = FileManager.default
+        let legacyURL = NSPersistentContainer.defaultDirectoryURL()
+            .appendingPathComponent("Everywhere.sqlite")
+        guard fm.fileExists(atPath: legacyURL.path) else { return }
+
+        if fm.fileExists(atPath: newURL.path) {
+            guard isStoreEmpty(at: newURL, model: model) else { return }
+            removeStoreFiles(at: newURL, fm: fm)
+        }
+
+        copyStoreFiles(from: legacyURL, to: newURL, fm: fm)
+    }
+
+    private static func isStoreEmpty(at url: URL, model: NSManagedObjectModel) -> Bool {
+        let coordinator = NSPersistentStoreCoordinator(managedObjectModel: model)
+        guard let store = try? coordinator.addPersistentStore(
+            ofType: NSSQLiteStoreType, configurationName: nil, at: url, options: nil
+        ) else { return false }
+        defer { try? coordinator.remove(store) }
+
+        let ctx = NSManagedObjectContext(concurrencyType: .mainQueueConcurrencyType)
+        ctx.persistentStoreCoordinator = coordinator
+        let request = NSFetchRequest<NSFetchRequestResult>(entityName: "Configuration")
+        request.resultType = .countResultType
+        return ((try? ctx.count(for: request)) ?? 1) == 0
+    }
+
+    private static func storeFileURLs(base: URL) -> [URL] {
+        [base,
+         URL(fileURLWithPath: base.path + "-wal"),
+         URL(fileURLWithPath: base.path + "-shm")]
+    }
+
+    private static func copyStoreFiles(from src: URL, to dst: URL, fm: FileManager) {
+        for (s, d) in zip(storeFileURLs(base: src), storeFileURLs(base: dst))
+            where fm.fileExists(atPath: s.path) {
+            try? fm.copyItem(at: s, to: d)
+        }
+    }
+
+    private static func removeStoreFiles(at url: URL, fm: FileManager) {
+        for u in storeFileURLs(base: url) where fm.fileExists(atPath: u.path) {
+            try? fm.removeItem(at: u)
+        }
     }
 
     private static func makeModel() -> NSManagedObjectModel {

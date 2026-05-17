@@ -84,11 +84,31 @@ final class PacketTunnelProvider: NEPacketTunnelProvider {
     }
 
     override func stopTunnel(with _: NEProviderStopReason, completionHandler: @escaping () -> Void) {
-        var err: NSError?
-        if !EvcoreStopAll(&err), let err {
-            NSLog("Everywhere: StopAll failed: \(err)")
+        // EvcoreStopAll is a synchronous Go call; on rare occasions it
+        // hasn't returned (e.g. a stuck core goroutine), which leaves
+        // iOS pinned at Disconnecting forever. Run it on a background
+        // queue and guarantee completionHandler fires within a few
+        // seconds either way — iOS will reap the process if needed.
+        let lock = NSLock()
+        var didComplete = false
+        let complete = {
+            lock.lock(); defer { lock.unlock() }
+            guard !didComplete else { return }
+            didComplete = true
+            completionHandler()
         }
-        completionHandler()
+
+        DispatchQueue.global(qos: .userInitiated).async {
+            var err: NSError?
+            if !EvcoreStopAll(&err), let err {
+                NSLog("Everywhere: StopAll failed: \(err)")
+            }
+            complete()
+        }
+
+        DispatchQueue.global().asyncAfter(deadline: .now() + 5) {
+            complete()
+        }
     }
 
     override func handleAppMessage(_ messageData: Data, completionHandler: ((Data?) -> Void)?) {
