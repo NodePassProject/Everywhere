@@ -70,6 +70,13 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		9972969AE7F1F3E248C5CD1D /* Shared */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
 		CB0BA4122FA6272C00E37B2C /* Everywhere */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -118,6 +125,7 @@
 		CB0BA4072FA6272C00E37B2C = {
 			isa = PBXGroup;
 			children = (
+				9972969AE7F1F3E248C5CD1D /* Shared */,
 				CB0BA4122FA6272C00E37B2C /* Everywhere */,
 				CB0BA4292FA6277800E37B2C /* EverywhereNE */,
 				CB0BA4262FA6277800E37B2C /* Frameworks */,
@@ -162,6 +170,7 @@
 				CB0BA42F2FA6277800E37B2C /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
+				9972969AE7F1F3E248C5CD1D /* Shared */,
 				CB0BA4122FA6272C00E37B2C /* Everywhere */,
 			);
 			name = Everywhere;
@@ -189,6 +198,7 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
+				9972969AE7F1F3E248C5CD1D /* Shared */,
 				CB0BA4292FA6277800E37B2C /* EverywhereNE */,
 			);
 			name = EverywhereNE;
@@ -418,7 +428,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Everywhere/Everywhere.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 10;
 				DEVELOPMENT_TEAM = C7AS5D38Q8;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -456,7 +466,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Everywhere/Everywhere.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 10;
 				DEVELOPMENT_TEAM = C7AS5D38Q8;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -492,7 +502,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = EverywhereNE/EverywhereNE.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 10;
 				DEVELOPMENT_TEAM = C7AS5D38Q8;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = EverywhereNE/Info.plist;
@@ -522,7 +532,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = EverywhereNE/EverywhereNE.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 10;
 				DEVELOPMENT_TEAM = C7AS5D38Q8;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = EverywhereNE/Info.plist;
@@ -592,8 +602,8 @@
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/NodePassProject/EverywhereCore";
 			requirement = {
-				kind = exactVersion;
-				version = 2026.05.14;
+				kind = upToNextMajorVersion;
+				minimumVersion = 2026.05.17;
 			};
 		};
 		803E3EBB055B6F1C161E71E9 /* XCRemoteSwiftPackageReference "Runestone" */ = {

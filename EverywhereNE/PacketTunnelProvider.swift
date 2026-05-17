@@ -5,12 +5,12 @@
 //  Created by NodePassProject on 5/2/26.
 //
 
+import CoreData
 import EverywhereCore
 import NetworkExtension
 
 final class PacketTunnelProvider: NEPacketTunnelProvider {
     private static let tunnelMTU = 1500
-    private static let appGroupIdentifier = "group.com.argsment.Everywhere"
 
     // When the Go core fails to start, we keep the NE alive so the
     // containing app can fetch the reason via IPC. Calling
@@ -20,9 +20,27 @@ final class PacketTunnelProvider: NEPacketTunnelProvider {
 
     override func startTunnel(options _: [String: NSObject]?, completionHandler: @escaping (Error?) -> Void) {
         let providerConfig = (protocolConfiguration as? NETunnelProviderProtocol)?.providerConfiguration ?? [:]
-        let coreType = (providerConfig["coreType"] as? String) ?? EvcoreCoreTypeXray
-        let configContent = (providerConfig["configContent"] as? String) ?? ""
+        let coreTypeRaw = (providerConfig["coreType"] as? String) ?? CoreType.xray.rawValue
+        let coreType = CoreType(rawValue: coreTypeRaw) ?? .xray
         let dnsServers = Self.cleanDNS(providerConfig["dnsServers"] as? [String])
+
+        // Resolve the user's active config from the shared Core Data
+        // store. iOS caps providerConfiguration at 512 KB, so the host
+        // app passes only the UUID and we fetch the row ourselves.
+        let configContent: String
+        do {
+            guard let idString = providerConfig["configID"] as? String,
+                  let id = UUID(uuidString: idString) else {
+                throw NSError(domain: "Everywhere", code: -2, userInfo: [
+                    NSLocalizedDescriptionKey: "missing configID in providerConfiguration"
+                ])
+            }
+            let raw = try Self.fetchConfigContent(id: id)
+            configContent = try ConfigNormalizer.normalize(raw, for: coreType)
+        } catch {
+            completionHandler(error)
+            return
+        }
 
         let settings = Self.makeTunnelSettings(mtu: Self.tunnelMTU, dnsServers: dnsServers)
         setTunnelNetworkSettings(settings) { [weak self] error in
@@ -48,15 +66,14 @@ final class PacketTunnelProvider: NEPacketTunnelProvider {
             // env, mihomo's $HOME/.config/mihomo, sing-box's relative
             // paths via CWD) resolve to user-injected files without
             // colliding on shared filenames like cache.db across cores.
-            if let resPath = Self.resourcesPath(forCoreType: coreType) {
-                var resErr: NSError?
-                if !EvcoreSetResourcesPath(resPath, &resErr), let resErr {
-                    NSLog("Everywhere: SetResourcesPath failed: \(resErr)")
-                }
+            let resPath = AppGroup.resourcesURL(for: coreType).path
+            var resErr: NSError?
+            if !EvcoreSetResourcesPath(resPath, &resErr), let resErr {
+                NSLog("Everywhere: SetResourcesPath failed: \(resErr)")
             }
 
             var coreErr: NSError?
-            guard EvcoreStartCore(coreType, configContent, Int(fd), Self.tunnelMTU, &coreErr) else {
+            guard EvcoreStartCore(coreType.rawValue, configContent, Int(fd), Self.tunnelMTU, &coreErr) else {
                 self.coreError = coreErr?.localizedDescription ?? "core failed to start"
                 completionHandler(nil)
                 return
@@ -118,14 +135,16 @@ final class PacketTunnelProvider: NEPacketTunnelProvider {
         return trimmed.isEmpty ? ["1.1.1.1", "8.8.8.8"] : trimmed
     }
 
-    private static func resourcesPath(forCoreType coreType: String) -> String? {
-        guard let container = FileManager.default.containerURL(
-            forSecurityApplicationGroupIdentifier: appGroupIdentifier
-        ) else { return nil }
-        let url = container
-            .appendingPathComponent("Resources", isDirectory: true)
-            .appendingPathComponent(coreType, isDirectory: true)
-        try? FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-        return url.path
+    private static func fetchConfigContent(id: UUID) throws -> String {
+        let context = PersistenceController.shared.container.viewContext
+        let request = NSFetchRequest<Configuration>(entityName: "Configuration")
+        request.predicate = NSPredicate(format: "id == %@", id as CVarArg)
+        request.fetchLimit = 1
+        guard let row = try context.fetch(request).first else {
+            throw NSError(domain: "Everywhere", code: -3, userInfo: [
+                NSLocalizedDescriptionKey: "active configuration not found in store"
+            ])
+        }
+        return row.content
     }
 }

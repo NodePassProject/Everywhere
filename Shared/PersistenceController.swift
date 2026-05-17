@@ -16,7 +16,15 @@ final class PersistenceController {
     private init() {
         let model = Self.makeModel()
         container = NSPersistentContainer(name: "Everywhere", managedObjectModel: model)
-        
+
+        // The store lives inside the App Group container so the
+        // Network Extension can open the same SQLite and read the
+        // active config directly. Without this the NE would need
+        // the config blob shipped through providerConfiguration,
+        // which iOS caps at 512 KB.
+        let storeURL = AppGroup.containerURL.appendingPathComponent("Everywhere.sqlite")
+        container.persistentStoreDescriptions = [NSPersistentStoreDescription(url: storeURL)]
+
         container.loadPersistentStores { _, error in
             if let error {
                 fatalError("Core Data load failed: \(error)")

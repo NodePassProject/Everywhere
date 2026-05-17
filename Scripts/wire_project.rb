@@ -13,10 +13,12 @@ PROJECT_PATH       = File.expand_path('../Everywhere.xcodeproj', __dir__)
 DASHBOARD_REL_PATH = 'ThirdParty/zashboard'
 DASHBOARD_NAME     = 'zashboard'
 DEPLOYMENT_TARGET  = '15.0'
+SHARED_FOLDER      = 'Shared'
 
-EVERYWHERE_CORE_REPO    = 'https://github.com/NodePassProject/EverywhereCore'
-EVERYWHERE_CORE_VERSION = '2026.05.14'
-EVERYWHERE_CORE_PRODUCT = 'EverywhereCore'
+EVERYWHERE_CORE_REPO        = 'https://github.com/NodePassProject/EverywhereCore'
+EVERYWHERE_CORE_MIN_VERSION = '2026.05.17'
+EVERYWHERE_CORE_REQ         = { 'kind' => 'upToNextMajorVersion', 'minimumVersion' => EVERYWHERE_CORE_MIN_VERSION }
+EVERYWHERE_CORE_PRODUCT     = 'EverywhereCore'
 
 RUNESTONE_URL = 'https://github.com/simonbs/Runestone'
 RUNESTONE_REQ = { 'kind' => 'upToNextMajorVersion', 'minimumVersion' => '0.5.0' }
@@ -100,10 +102,7 @@ def link_product(target, project, dep)
 end
 
 # --- EverywhereCore (both targets) ---------------------------------------
-core_pkg = ensure_swift_package(project, EVERYWHERE_CORE_REPO, {
-  'kind' => 'exactVersion',
-  'version' => EVERYWHERE_CORE_VERSION,
-})
+core_pkg = ensure_swift_package(project, EVERYWHERE_CORE_REPO, EVERYWHERE_CORE_REQ)
 core_app_dep = add_product_dep(app_target, project, core_pkg, EVERYWHERE_CORE_PRODUCT)
 core_ne_dep  = add_product_dep(ne_target,  project, core_pkg, EVERYWHERE_CORE_PRODUCT)
 link_product(app_target, project, core_app_dep)
@@ -203,5 +202,27 @@ unless app_target.resources_build_phase.files.any? { |bf| bf.file_ref == dashboa
   app_target.resources_build_phase.add_file_reference(dashboard_ref)
 end
 
+# --- Shared/ synced root group (both targets compile its sources) --------
+# Sources that both the host app and the Network Extension need —
+# Core Data stack, AppGroup helper, ConfigNormalizer, etc. — live in
+# Shared/. The folder is registered as a PBXFileSystemSynchronizedRootGroup
+# on both targets so every .swift inside auto-joins each target's
+# Sources build phase. This is the canonical Xcode-16 way to share
+# sources across targets without per-file membership exceptions.
+shared_group = project.main_group.children.find do |c|
+  c.is_a?(Xcodeproj::Project::Object::PBXFileSystemSynchronizedRootGroup) && c.path == SHARED_FOLDER
+end
+unless shared_group
+  shared_group = project.new(Xcodeproj::Project::Object::PBXFileSystemSynchronizedRootGroup)
+  shared_group.path = SHARED_FOLDER
+  shared_group.source_tree = '<group>'
+  project.main_group << shared_group
+end
+[app_target, ne_target].each do |target|
+  target.file_system_synchronized_groups ||= []
+  next if target.file_system_synchronized_groups.include?(shared_group)
+  target.file_system_synchronized_groups << shared_group
+end
+
 project.save
-puts "Wired EverywhereCore @ #{EVERYWHERE_CORE_VERSION} (SwiftPM) + Runestone + YAML + zashboard into #{PROJECT_PATH}"
+puts "Wired EverywhereCore (>= #{EVERYWHERE_CORE_MIN_VERSION}, SwiftPM) + Runestone + YAML + zashboard into #{PROJECT_PATH}"
