@@ -22,7 +22,7 @@ final class PersistenceController {
         // active config directly. Without this the NE would need
         // the config blob shipped through providerConfiguration,
         // which iOS caps at 512 KB.
-        let storeURL = AppGroup.containerURL.appendingPathComponent("Everywhere.sqlite")
+        let storeURL = EVCore.containerURL.appendingPathComponent("Everywhere.sqlite")
         Self.migrateLegacyStoreIfNeeded(to: storeURL, model: model)
         container.persistentStoreDescriptions = [NSPersistentStoreDescription(url: storeURL)]
 

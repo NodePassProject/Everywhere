@@ -66,7 +66,7 @@ final class PacketTunnelProvider: NEPacketTunnelProvider {
             // env, mihomo's $HOME/.config/mihomo, sing-box's relative
             // paths via CWD) resolve to user-injected files without
             // colliding on shared filenames like cache.db across cores.
-            let resPath = AppGroup.resourcesURL(for: coreType).path
+            let resPath = EVCore.resourcesURL(for: coreType).path
             var resErr: NSError?
             if !EvcoreSetResourcesPath(resPath, &resErr), let resErr {
                 NSLog("Everywhere: SetResourcesPath failed: \(resErr)")

@@ -12,18 +12,13 @@ import Foundation
 final class ConfigurationStore: ObservableObject {
     static let shared = ConfigurationStore()
 
-    private enum Keys {
-        static let selectedCore = "selectedCore"
-        static let activeByCoreType = "activeByCoreType"
-    }
-
     @Published private(set) var configurations: [Configuration] = []
 
     /// The core the user is currently working with — drives what
     /// HomeView's picker reads/writes and what `ConfigurationsView`
     /// filters its list by.
     @Published var selectedCore: CoreType {
-        didSet { AppGroup.defaults.set(selectedCore.rawValue, forKey: Keys.selectedCore) }
+        didSet { EVCore.setSelectedCore(selectedCore) }
     }
 
     /// Each core type has its own "active" configuration so switching
@@ -49,8 +44,7 @@ final class ConfigurationStore: ObservableObject {
     private init() {
         self.context = PersistenceController.shared.container.viewContext
 
-        let storedCoreRaw = AppGroup.defaults.string(forKey: Keys.selectedCore)
-        self.selectedCore = storedCoreRaw.flatMap(CoreType.init(rawValue:)) ?? .xray
+        self.selectedCore = EVCore.getSelectedCore()
 
         loadActiveMap()
         reload()
@@ -147,11 +141,11 @@ final class ConfigurationStore: ObservableObject {
         let dict = activeIDByCoreType.reduce(into: [String: String]()) { acc, kv in
             acc[kv.key.rawValue] = kv.value.uuidString
         }
-        AppGroup.defaults.set(dict, forKey: Keys.activeByCoreType)
+        EVCore.setActiveByCoreType(dict)
     }
 
     private func loadActiveMap() {
-        let raw = AppGroup.defaults.dictionary(forKey: Keys.activeByCoreType) as? [String: String] ?? [:]
+        let raw = EVCore.getActiveByCoreType()
         activeIDByCoreType = raw.reduce(into: [CoreType: UUID]()) { acc, kv in
             if let core = CoreType(rawValue: kv.key), let id = UUID(uuidString: kv.value) {
                 acc[core] = id

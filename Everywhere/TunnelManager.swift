@@ -40,7 +40,7 @@ final class TunnelManager: ObservableObject {
         do {
             let managers = try await NETunnelProviderManager.loadAllFromPreferences()
             let m = managers.first(where: {
-                ($0.protocolConfiguration as? NETunnelProviderProtocol)?.providerBundleIdentifier == AppGroup.NEIdentifier
+                ($0.protocolConfiguration as? NETunnelProviderProtocol)?.providerBundleIdentifier == EVCore.Identifier.networkExtension
             }) ?? managers.first ?? NETunnelProviderManager()
             self.manager = m
             self.status = m.connection.status
@@ -103,7 +103,7 @@ final class TunnelManager: ObservableObject {
     private func ensureManager(coreType: CoreType, configID: UUID) async throws -> NETunnelProviderManager {
         let m = manager ?? NETunnelProviderManager()
         let proto = (m.protocolConfiguration as? NETunnelProviderProtocol) ?? NETunnelProviderProtocol()
-        proto.providerBundleIdentifier = AppGroup.NEIdentifier
+        proto.providerBundleIdentifier = EVCore.Identifier.networkExtension
         proto.serverAddress = "Everywhere"
         // Carry only metadata — iOS caps providerConfiguration at 512 KB,
         // and large rulesets blow past that. The NE reads the active
@@ -113,8 +113,16 @@ final class TunnelManager: ObservableObject {
             "configID": configID.uuidString,
             "dnsServers": AppState.shared.dnsServers
         ]
+        proto.includeAllNetworks = AppState.shared.tunnelIncludeAllNetworks
+        proto.excludeLocalNetworks = !AppState.shared.tunnelIncludeLocalNetworks
+        if #available(iOS 16.4, *) {
+            proto.excludeCellularServices = !AppState.shared.tunnelIncludeCellularServices
+        }
+        if #available(iOS 17.0, *) {
+            proto.excludeAPNs = !AppState.shared.tunnelIncludeAPNs
+        }
         m.protocolConfiguration = proto
-        m.localizedDescription = AppGroup.tunnelDescription
+        m.localizedDescription = EVCore.Identifier.tunnelDescription
         m.isEnabled = true
 
         if AppState.shared.alwaysOnEnabled {

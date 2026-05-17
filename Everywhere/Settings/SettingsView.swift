@@ -19,8 +19,13 @@ struct SettingsView: View {
                         Label("Always On", systemImage: "bolt")
                     }
                     .disabled(tunnel.pendingReconnect)
+                    NavigationLink {
+                        TunnelSettingsView()
+                    } label: {
+                        Label("Tunnel", systemImage: "shield.lefthalf.filled")
+                    }
                 }
-                
+
                 Section("Network") {
                     NavigationLink {
                         DNSSettingsView()
@@ -40,14 +45,13 @@ struct SettingsView: View {
                 Section("About") {
                     Link(destination: URL(string: "https://t.me/everywhere_proxy")!) {
                         HStack {
-                            HStack {
+                            Label {
+                                Text("Join Telegram Group")
+                            } icon: {
                                 Image("TelegramSymbol")
+                                    .resizable()
                                     .interpolation(.high)
                                     .renderingMode(.template)
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(width: 25)
-                                Text("Join Telegram Group")
                             }
                             Spacer()
                             Image(systemName: "arrow.up.right")

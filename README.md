@@ -31,58 +31,63 @@ doing things. Everywhere doesn't. It bundles three of the most popular
 open-source proxy cores in one place, gives them a clean home, and lets
 you move between them whenever you like.
 
+## Supported Protocols
+
+| Protocol         | Xray-core    | sing-box     | mihomo       | Everywhere   |
+|------------------|--------------|--------------|--------------|--------------|
+| VLESS            | ✓            | ✓            | ✓            | ✓            |
+| VMess            | ✓            | ✓            | ✓            | ✓            |
+| Trojan           | ✓            | ✓            | ✓            | ✓            |
+| Shadowsocks      | ✓            | ✓            | ✓            | ✓            |
+| ShadowsocksR     | —            | ✓            | ✓            | ✓            |
+| Hysteria2        | ✓            | ✓            | ✓            | ✓            |
+| TUIC             | —            | ✓ (v5)       | ✓ (v4 + v5)  | ✓ (v4 + v5)  |
+| WireGuard        | ✓            | ✓            | ✓            | ✓            |
+| Naive            | —            | ✓            | —            | ✓            |
+| AnyTLS           | —            | ✓            | ✓            | ✓            |
+| SSH              | —            | ✓            | ✓            | ✓            |
+| Tor              | —            | ✓            | —            | ✓            |
+| HTTP / SOCKS     | ✓            | ✓            | ✓            | ✓            |
+| Tailscale        | -            | ✓            | ✓            | ✓            |
+
+## Supported Cores
+
+| Core      | Config    | Supported? |
+|-----------|-----------|------------|
+| Xray-core | JSON      | ✓          |
+| sing-box  | JSON      | ✓          |
+| mihomo    | YAML      | ✓          |
+
 ## Features
 
-### Cores
-
-- **Xray-core** `v26.3.27` — battle-tested VLESS / VMess / Trojan /
-  Shadowsocks with the full XTLS / Reality / XHTTP transport matrix
-- **sing-box** `v1.13.11` — modern modular core with a strong rule
-  engine, built with the client-relevant `with_*` tags (`clash_api`,
-  `grpc`, `gvisor`, `quic`, `utls`, `wireguard`); inbound/server-only
-  and big-tree extras (Tailscale, ACME, v2ray stats, DHCP DNS) are
-  dropped upstream
-- **mihomo** `v1.19.24` — Clash-flavored ergonomics with rich proxy
-  groups, fake-IP, and rule providers
-- **Live core switching** — change engines from the Home tab whenever
-  the tunnel is stopped; configurations don't get tangled across cores
-- **Native TUN inbound per core** — each engine consumes the iOS `utun`
-  file descriptor directly. No userspace `tun→socks` bridge, no extra
-  hop, no extra latency
-
-### App
-
-- **Built-in code editor** — Tree-sitter syntax highlighting for JSON
-  and YAML, line numbers, 80-column page guide, no autocorrect
-  "helping" you turn `"server"` into `"sever"`
-- **Bring configs from anywhere** — type one in, import a file, or paste
-  a URL and let the app fetch it
-- **Per-core configuration lists** — your Xray setups don't get mixed
-  up with your mihomo ones
-- **zashboard** — bundled Clash dashboard for live traffic, proxy
-  groups, and rule inspection (works with sing-box and mihomo; Xray
-  has no clash API)
-- **Resource management** — drop `geoip.dat`, `geosite.dat`, `ASN.mmdb`,
-  cache files, or PEMs into per-core resource folders; each engine sees
-  them in the right place automatically
-- **Always-On** — opt in to an `NEOnDemandRuleConnect` rule so iOS
-  brings the tunnel back up after a reboot or network flap
-- **Custom DNS** — set the resolvers the `NEPacketTunnelNetworkSettings`
-  advertises to the system; defaults to `1.1.1.1` / `8.8.8.8`
-
-### Architecture
-
-- **Native Network Extension** — `NEPacketTunnelProvider` owns the
-  `utun` device; the extension and the app share configurations through
-  an App Group container
-- **Prebuilt `EverywhereCore.xcframework`** — Xray, sing-box, and mihomo
-  are compiled upstream by
-  [NodePassProject/EverywhereCore](https://github.com/NodePassProject/EverywhereCore)
-  and consumed as a SwiftPM binary target pinned to a daily-rolled tag
-- **Tree-sitter editor** — [Runestone](https://github.com/simonbs/Runestone)
-  with the JSON and YAML grammars compiled in
-- **Bundled web dashboard** — zashboard is served from the app bundle
-  via a custom `zashboard://` URL scheme.
+- **Maximum flexibility** - Switch cores whenever you want. Three
+  engines live side by side in the same app, one tap apart.
+- **Universal experience** - Same UI, same editor, same dashboard
+  wiring no matter which core you picked. Switching engines doesn't
+  mean relearning the app.
+- **Low overhead** - Only one core runs at a time, talking directly
+  to the iOS `utun` device. No userspace `tun→socks` bridge, no
+  extra hops, no idle daemons in the background.
+- **BYOC (Bring Your Own Config)** - Paste a URL, import a file, or
+  type one in. Whatever config you already have, it just works — no
+  conversion, no lock-in.
+- **Configuration as craft** - Your config decides how your phone
+  meets the internet. The editor inside Everywhere gives it the
+  treatment it deserves, so writing it feels less like filling a
+  form and more like making something.
+- **Total transparency** - Nothing about the tunnel is hidden from
+  you. Every byte, every connection, every routing decision shows
+  up the moment it happens, right inside the app.
+- **Engineered isolation** - Three engines in one app, never in
+  each other's way. Each lives in its own world, with its own
+  files, its own state, its own rules.
+- **Beyond reboot** - Reboots, network drops, the leap from
+  cellular to Wi-Fi — your tunnel survives all of it. You don't
+  open the app; iOS does that for you whenever the network needs
+  the tunnel back.
+- **Sovereign resolution** - Every connection starts with a name
+  lookup. You decide who gets to answer that question — Cloudflare,
+  Google, your own resolver, whatever you trust.
 
 ## Getting Started
 
@@ -107,17 +112,6 @@ To run an `xcodebuild` simulator smoke test as the final step:
 ```bash
 ./build.sh --build-app
 ```
-
-## Patches & Upstream Tracking
-
-The Go cores live in their own repository,
-[NodePassProject/EverywhereCore](https://github.com/NodePassProject/EverywhereCore),
-which a daily GitHub Actions job auto-releases against the latest
-upstream tags. Tag matrix, `gomobile bind` mechanics, and per-core
-wiring quirks are documented there. Consumer-side notes for this app
-(deployment target, `libresolv.tbd`, zashboard folder reference) live
-in [`PATCHES.md`](PATCHES.md). Bump `EVERYWHERE_CORE_VERSION` in
-`Scripts/wire_project.rb` and re-run `./build.sh` to roll forward.
 
 ## Acknowledgements
 

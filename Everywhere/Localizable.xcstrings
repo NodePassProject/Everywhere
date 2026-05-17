@@ -284,6 +284,18 @@
         }
       }
     },
+    "Include All Networks" : {
+      "shouldTranslate" : false
+    },
+    "Include APNs" : {
+      "shouldTranslate" : false
+    },
+    "Include Cellular Services" : {
+      "shouldTranslate" : false
+    },
+    "Include Local Networks" : {
+      "shouldTranslate" : false
+    },
     "Invalid name." : {
       "localizations" : {
         "zh-Hans" : {
