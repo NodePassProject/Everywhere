@@ -9,7 +9,7 @@ import Foundation
 
 enum AppGroup {
     static let identifier = "group.com.argsment.Everywhere"
-    static let extensionBundleID = "com.argsment.Everywhere.EverywhereNE"
+    static let NEIdentifier = "com.argsment.Everywhere.EverywhereNE"
     static let tunnelDescription = "Everywhere"
 
     static var defaults: UserDefaults {
