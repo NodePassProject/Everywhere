@@ -20,7 +20,9 @@ struct HomeView: View {
                     Toggle(isOn: tunnelToggleBinding) {
                         HStack {
                             Image(store.selectedCore.rawValue)
+                                .interpolation(.high)
                                 .resizable()
+                                .scaledToFit()
                                 .frame(width: 25, height: 25)
                             Text("Tunnel")
                             Spacer()
@@ -34,10 +36,15 @@ struct HomeView: View {
                 Section {
                     ForEach(CoreType.allCases) { core in
                         HStack {
-                            Image(core.rawValue)
-                                .resizable()
-                                .frame(width: 25, height: 25)
-                            Text(core.displayName)
+                            Label {
+                                Text(core.displayName)
+                            } icon: {
+                                Image(core.rawValue)
+                                    .interpolation(.high)
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 25, height: 25)
+                            }
                             if store.selectedCore == core {
                                 Image(systemName: "checkmark")
                                     .foregroundColor(.accentColor)

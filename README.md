@@ -41,14 +41,16 @@ you move between them whenever you like.
 | Shadowsocks      | ✓            | ✓            | ✓            | ✓            |
 | ShadowsocksR     | —            | ✓            | ✓            | ✓            |
 | Hysteria2        | ✓            | ✓            | ✓            | ✓            |
-| TUIC             | —            | ✓ (v5)       | ✓ (v4 + v5)  | ✓ (v4 + v5)  |
 | WireGuard        | ✓            | ✓            | ✓            | ✓            |
 | Naive            | —            | ✓            | —            | ✓            |
+| TUIC             | —            | ✓ (v5)       | ✓ (v4 + v5)  | ✓ (v4 + v5)  |
 | AnyTLS           | —            | ✓            | ✓            | ✓            |
-| SSH              | —            | ✓            | ✓            | ✓            |
+| Sudoku           | —            | —            | ✓            | ✓            |
 | Tor              | —            | ✓            | —            | ✓            |
-| HTTP / SOCKS     | ✓            | ✓            | ✓            | ✓            |
-| Tailscale        | -            | ✓            | ✓            | ✓            |
+| SSH              | —            | ✓            | ✓            | ✓            |
+| SOCKS            | ✓            | ✓            | ✓            | ✓            |
+| HTTP             | ✓            | ✓            | ✓            | ✓            |
+| Tailscale        | —            | ✓            | ✓            | ✓            |
 
 ## Supported Cores
 

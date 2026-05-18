@@ -12,11 +12,21 @@ struct ResourcesView: View {
         Form {
             Section {
                 ForEach(CoreType.allCases) { core in
-                    NavigationLink(core.displayName) {
+                    NavigationLink {
                         DirectoryBrowserView(
                             url: ResourcesStore.directory(for: core),
                             title: core.displayName
                         )
+                    } label: {
+                        Label {
+                            Text(core.displayName)
+                        } icon: {
+                            Image(core.rawValue)
+                                .interpolation(.high)
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 25, height: 25)
+                        }
                     }
                 }
             }

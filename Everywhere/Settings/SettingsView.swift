@@ -22,7 +22,7 @@ struct SettingsView: View {
                     NavigationLink {
                         TunnelSettingsView()
                     } label: {
-                        Label("Tunnel", systemImage: "shield.lefthalf.filled")
+                        Label("Tunnel", systemImage: "shield")
                     }
                 }
 
@@ -49,9 +49,10 @@ struct SettingsView: View {
                                 Text("Join Telegram Group")
                             } icon: {
                                 Image("TelegramSymbol")
-                                    .resizable()
                                     .interpolation(.high)
                                     .renderingMode(.template)
+                                    .resizable()
+                                    .scaledToFit()
                             }
                             Spacer()
                             Image(systemName: "arrow.up.right")

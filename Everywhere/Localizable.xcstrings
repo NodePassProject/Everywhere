@@ -234,6 +234,16 @@
         }
       }
     },
+    "Go Back" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "返回"
+          }
+        }
+      }
+    },
     "Home" : {
       "localizations" : {
         "zh-Hans" : {
@@ -525,6 +535,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "停止核心以切换活跃配置或删除活跃配置。"
+          }
+        }
+      }
+    },
+    "Stop VPN" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "停止 VPN"
           }
         }
       }
