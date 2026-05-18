@@ -7,12 +7,9 @@
 
 import SwiftUI
 
-// Free-floating, drag-positionable menu button. Sits inside the running
-// view's safe area; the user can drag it to any corner. Tapping the
-// button opens a menu with actions for returning to the home screen or
-// stopping the VPN.
 struct FloatingMenuButton: View {
-    let onHome: () -> Void
+    let isMinimized: Bool
+    let onToggleMinimize: () -> Void
     let onStop: () -> Void
 
     @State private var location: CGPoint?
@@ -32,9 +29,13 @@ struct FloatingMenuButton: View {
 
             Menu {
                 Button {
-                    onHome()
+                    onToggleMinimize()
                 } label: {
-                    Label("Go Back", systemImage: "arrow.turn.up.left")
+                    if isMinimized {
+                        Label("Show Dashboard", systemImage: "gauge.with.dots.needle.33percent")
+                    } else {
+                        Label("Go Back", systemImage: "arrow.turn.up.left")
+                    }
                 }
                 Button(role: .destructive) {
                     onStop()
@@ -42,7 +43,7 @@ struct FloatingMenuButton: View {
                     Label("Stop VPN", systemImage: "stop.fill")
                 }
             } label: {
-                if #available(iOS 26.0, *), false {
+                if #available(iOS 26.0, *) {
                     Image(systemName: "ellipsis")
                         .font(.system(size: 24, weight: .semibold))
                         .foregroundStyle(.primary)
@@ -57,7 +58,7 @@ struct FloatingMenuButton: View {
                         .frame(width: buttonSize, height: buttonSize)
                         .background(
                             Circle()
-                                .fill(.gray.opacity(0.1))
+                                .fill(.gray.opacity(0.2))
                         )
                         .contentShape(Circle())
                         .accessibilityLabel("More")
