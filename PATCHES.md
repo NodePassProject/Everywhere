@@ -32,7 +32,7 @@ on each tag, so only tagged releases are consumable downstream.
 
 | Package                                                    | Targets   | Pin                          |
 | ---------------------------------------------------------- | --------- | ---------------------------- |
-| `NodePassProject/EverywhereCore`                           | app + NE  | `upToNextMajor 2026.05.17`   |
+| `NodePassProject/EverywhereCore`                           | app + NE  | `upToNextMajor 2026.05.18`   |
 | `simonbs/Runestone`                                        | app       | `upToNextMajor 0.5.0`        |
 | `simonbs/TreeSitterLanguages` (JSON + YAML products)       | app       | `upToNextMajor 0.1.10`       |
 | `Argsment/YAML`                                            | app       | `branch main`                |

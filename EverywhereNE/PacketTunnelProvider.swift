@@ -7,6 +7,7 @@
 
 import CoreData
 import EverywhereCore
+import Network
 import NetworkExtension
 
 final class PacketTunnelProvider: NEPacketTunnelProvider {
@@ -17,6 +18,13 @@ final class PacketTunnelProvider: NEPacketTunnelProvider {
     // `completionHandler(error)` would have the system terminate the NE
     // before the app gets a chance to read it.
     private var coreError: String?
+
+    // Default-interface tracker. NWPathMonitor fires whenever iOS swaps
+    // the device's underlying physical interface (WiFi↔cellular, hotspot
+    // toggles, airplane mode). Each fire is forwarded to the Go core
+    // via EvcoreUpdateDefaultInterface.
+    private var pathMonitor: NWPathMonitor?
+    private let pathMonitorQueue = DispatchQueue(label: "com.argsment.Everywhere.pathMonitor", qos: .utility)
 
     override func startTunnel(options _: [String: NSObject]?, completionHandler: @escaping (Error?) -> Void) {
         let providerConfig = (protocolConfiguration as? NETunnelProviderProtocol)?.providerConfiguration ?? [:]
@@ -79,11 +87,14 @@ final class PacketTunnelProvider: NEPacketTunnelProvider {
                 return
             }
 
+            self.startPathMonitor()
+
             completionHandler(nil)
         }
     }
 
     override func stopTunnel(with _: NEProviderStopReason, completionHandler: @escaping () -> Void) {
+        stopPathMonitor()
         // EvcoreStopAll is a synchronous Go call; on rare occasions it
         // hasn't returned (e.g. a stuck core goroutine), which leaves
         // iOS pinned at Disconnecting forever. Run it on a background
@@ -109,6 +120,17 @@ final class PacketTunnelProvider: NEPacketTunnelProvider {
         DispatchQueue.global().asyncAfter(deadline: .now() + 5) {
             complete()
         }
+    }
+    
+    override func sleep(completionHandler: @escaping () -> Void) {
+        var err: NSError?
+        _ = EvcoreSuspend(&err)
+        completionHandler()
+    }
+
+    override func wake() {
+        var err: NSError?
+        _ = EvcoreResume(&err)
     }
 
     override func handleAppMessage(_ messageData: Data, completionHandler: ((Data?) -> Void)?) {
@@ -153,6 +175,37 @@ final class PacketTunnelProvider: NEPacketTunnelProvider {
     private static func cleanDNS(_ raw: [String]?) -> [String] {
         let trimmed = (raw ?? []).map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
         return trimmed.isEmpty ? ["1.1.1.1", "8.8.8.8"] : trimmed
+    }
+
+    private func startPathMonitor() {
+        stopPathMonitor()
+        let monitor = NWPathMonitor()
+        monitor.pathUpdateHandler = { [weak self] (path: Network.NWPath) in
+            self?.handlePathUpdate(path)
+        }
+        monitor.start(queue: pathMonitorQueue)
+        pathMonitor = monitor
+    }
+
+    private func stopPathMonitor() {
+        pathMonitor?.cancel()
+        pathMonitor = nil
+    }
+
+    private func handlePathUpdate(_ path: Network.NWPath) {
+        var err: NSError?
+        guard path.status == .satisfied, let iface = path.availableInterfaces.first else {
+            // No usable path
+            _ = EvcoreUpdateDefaultInterface("", -1, false, false, &err)
+            return
+        }
+        _ = EvcoreUpdateDefaultInterface(
+            iface.name,
+            Int32(iface.index),
+            path.isExpensive,
+            path.isConstrained,
+            &err
+        )
     }
 
     private static func fetchConfigContent(id: UUID) throws -> String {

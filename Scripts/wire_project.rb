@@ -16,7 +16,7 @@ DEPLOYMENT_TARGET  = '15.0'
 SHARED_FOLDER      = 'Shared'
 
 EVERYWHERE_CORE_REPO        = 'https://github.com/NodePassProject/EverywhereCore'
-EVERYWHERE_CORE_MIN_VERSION = '2026.05.17'
+EVERYWHERE_CORE_MIN_VERSION = '2026.05.18'
 EVERYWHERE_CORE_REQ         = { 'kind' => 'upToNextMajorVersion', 'minimumVersion' => EVERYWHERE_CORE_MIN_VERSION }
 EVERYWHERE_CORE_PRODUCT     = 'EverywhereCore'
 
