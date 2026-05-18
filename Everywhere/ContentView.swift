@@ -15,7 +15,7 @@ struct ContentView: View {
     var body: some View {
         ZStack {
             if tunnel.coreRunning && !minimized {
-                RunningRootView(onHome: { minimized = true })
+                RunningRootView()
             } else {
                 TabView {
                     HomeView()
@@ -25,6 +25,17 @@ struct ContentView: View {
                         .tabItem { Label("Settings", systemImage: "gearshape") }
                 }
             }
+
+            // Overlay the menu button for the whole tunnel session so
+            // it follows the user from the dashboard back to the home
+            // tabs without losing its drag-positioned location.
+            if tunnel.coreRunning {
+                FloatingMenuButton(
+                    isMinimized: minimized,
+                    onToggleMinimize: { minimized.toggle() },
+                    onStop: stopTunnel
+                )
+            }
         }
         .animation(.default, value: tunnel.coreRunning)
         .animation(.default, value: minimized)
@@ -32,35 +43,28 @@ struct ContentView: View {
             if !running { minimized = false }
         }
     }
+
+    private func stopTunnel() {
+        Task { await tunnel.setEnabled(false, configuration: store.active) }
+    }
 }
 
 // Fullscreen view shown while the tunnel core is running. Mirrors the
 // macOS sibling: the regular navigation collapses out of the way and
 // the dashboard (or a placeholder for Xray, which has no clash API)
-// takes the whole screen, with a draggable menu button offering either
-// a return to the home screen or a disconnect.
+// takes the whole screen. The disconnect/return controls live in the
+// FloatingMenuButton overlaid by ContentView.
 private struct RunningRootView: View {
-    @ObservedObject private var tunnel = TunnelManager.shared
     @ObservedObject private var store = ConfigurationStore.shared
-    let onHome: () -> Void
 
     var body: some View {
-        ZStack {
-            VStack {
-                if store.selectedCore == .xray {
-                    Text("Xray is running")
-                        .font(.title2)
-                        .foregroundStyle(.secondary)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else {
-                    DashboardView()
-                }
-            }
-            FloatingMenuButton(onHome: onHome, onStop: stopTunnel)
+        if store.selectedCore == .xray {
+            Text("Xray is running")
+                .font(.title2)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else {
+            DashboardView()
         }
-    }
-
-    private func stopTunnel() {
-        Task { await tunnel.setEnabled(false, configuration: store.active) }
     }
 }

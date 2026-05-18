@@ -43,6 +43,23 @@ struct SettingsView: View {
                 }
                 
                 Section("About") {
+                    Link(destination: URL(string: "https://core-tutorial.argsment.com")!) {
+                        HStack {
+                            Label {
+                                Text("Core Tutorial")
+                            } icon: {
+                                Image(systemName: "book.pages")
+                                    .interpolation(.high)
+                                    .renderingMode(.template)
+                                    .resizable()
+                                    .scaledToFit()
+                            }
+                            Spacer()
+                            Image(systemName: "arrow.up.right")
+                                .font(.footnote.bold())
+                                .foregroundStyle(.secondary)
+                        }
+                    }
                     Link(destination: URL(string: "https://t.me/everywhere_proxy")!) {
                         HStack {
                             Label {
