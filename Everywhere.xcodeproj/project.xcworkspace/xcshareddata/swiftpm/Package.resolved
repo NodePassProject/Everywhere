@@ -36,15 +36,6 @@
         "revision" : "15cf3a9ec3ab95e0d058b7df9f35619123c9e02d",
         "version" : "0.1.10"
       }
-    },
-    {
-      "identity" : "yaml",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/Argsment/YAML",
-      "state" : {
-        "branch" : "main",
-        "revision" : "1cc58b32e84fa7259a49b046072fa3a44701e4b7"
-      }
     }
   ],
   "version" : 3

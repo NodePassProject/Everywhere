@@ -8,7 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		21F6AB21D5453421EB6AED73 /* EverywhereCore in Frameworks */ = {isa = PBXBuildFile; productRef = AEC527B12E302B3F440C56C4 /* EverywhereCore */; };
-		3908286E459F46C3CB601342 /* YAML in Frameworks */ = {isa = PBXBuildFile; productRef = 4B6099CE03D6574A22F38F95 /* YAML */; };
 		5F5762E26C734B0D4F782C4B /* Runestone in Frameworks */ = {isa = PBXBuildFile; productRef = 4DC5B599D63656168B7AB4AD /* Runestone */; };
 		61E757C0609660122F8F2D98 /* TreeSitterJSONRunestone in Frameworks */ = {isa = PBXBuildFile; productRef = 5FC290B307CFBBDCAEB9AB4E /* TreeSitterJSONRunestone */; };
 		6489290499024A6A49A18665 /* libresolv.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = AD2724A4F89A96B133F540CB /* libresolv.tbd */; };
@@ -103,7 +102,6 @@
 				61E757C0609660122F8F2D98 /* TreeSitterJSONRunestone in Frameworks */,
 				7FAB6E1B99843FBC3CEF9BD3 /* TreeSitterYAMLRunestone in Frameworks */,
 				8A430E870A41435438F9F399 /* EverywhereCore in Frameworks */,
-				3908286E459F46C3CB601342 /* YAML in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -177,7 +175,6 @@
 				5FC290B307CFBBDCAEB9AB4E /* TreeSitterJSONRunestone */,
 				41465227A138948FE50A7E53 /* TreeSitterYAMLRunestone */,
 				B672C232E19E5E5F670A2F6D /* EverywhereCore */,
-				4B6099CE03D6574A22F38F95 /* YAML */,
 			);
 			productName = Everywhere;
 			productReference = CB0BA4102FA6272C00E37B2C /* Everywhere.app */;
@@ -239,7 +236,6 @@
 				803E3EBB055B6F1C161E71E9 /* XCRemoteSwiftPackageReference "Runestone" */,
 				21BE8ADEADB6191676A9B4DB /* XCRemoteSwiftPackageReference "TreeSitterLanguages" */,
 				2B8487E04E12B2EE3EBD6BE7 /* XCRemoteSwiftPackageReference "EverywhereCore" */,
-				E32F21A18F2F42E43960DC59 /* XCRemoteSwiftPackageReference "YAML" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = CB0BA4112FA6272C00E37B2C /* Products */;
@@ -612,14 +608,6 @@
 				minimumVersion = 0.5.0;
 			};
 		};
-		E32F21A18F2F42E43960DC59 /* XCRemoteSwiftPackageReference "YAML" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/Argsment/YAML";
-			requirement = {
-				branch = main;
-				kind = branch;
-			};
-		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -627,11 +615,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 21BE8ADEADB6191676A9B4DB /* XCRemoteSwiftPackageReference "TreeSitterLanguages" */;
 			productName = TreeSitterYAMLRunestone;
-		};
-		4B6099CE03D6574A22F38F95 /* YAML */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = E32F21A18F2F42E43960DC59 /* XCRemoteSwiftPackageReference "YAML" */;
-			productName = YAML;
 		};
 		4DC5B599D63656168B7AB4AD /* Runestone */ = {
 			isa = XCSwiftPackageProductDependency;
