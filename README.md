@@ -42,7 +42,7 @@ you move between them whenever you like.
 | ShadowsocksR     | —            | ✓            | ✓            | ✓            |
 | Hysteria2        | ✓            | ✓            | ✓            | ✓            |
 | WireGuard        | ✓            | ✓            | ✓            | ✓            |
-| Naive            | —            | ✓            | —            | ✓            |
+| Naive            | —            | ✓            | —            | —            |
 | TUIC             | —            | ✓ (v5)       | ✓ (v4 + v5)  | ✓ (v4 + v5)  |
 | AnyTLS           | —            | ✓            | ✓            | ✓            |
 | Sudoku           | —            | —            | ✓            | ✓            |
@@ -83,13 +83,6 @@ you move between them whenever you like.
 - **Engineered isolation** - Three engines in one app, never in
   each other's way. Each lives in its own world, with its own
   files, its own state, its own rules.
-- **Beyond reboot** - Reboots, network drops, the leap from
-  cellular to Wi-Fi — your tunnel survives all of it. You don't
-  open the app; iOS does that for you whenever the network needs
-  the tunnel back.
-- **Sovereign resolution** - Every connection starts with a name
-  lookup. You decide who gets to answer that question — Cloudflare,
-  Google, your own resolver, whatever you trust.
 
 ## Getting Started
 
@@ -127,6 +120,20 @@ networking work:
 - [Runestone](https://github.com/simonbs/Runestone)
 
 Huge thanks to everyone who maintains them.
+
+## Related Projects
+
+<table>
+<tr>
+<td width="100" valign="middle">
+<a href="https://apps.apple.com/us/app/id6758235178"><img width="80" height="80" alt="Anywhere" src="https://storage.argsment.com/Anywhere-AppIcon-iOS.png" /></a>
+</td>
+<td valign="middle">
+<a href="https://github.com/NodePassProject/Anywhere"><b>Anywhere</b></a><br>
+<sub>The best native proxy client for iOS, iPadOS, and tvOS.</sub>
+</td>
+</tr>
+</table>
 
 ## License
 
