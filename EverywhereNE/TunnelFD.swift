@@ -8,15 +8,6 @@
 import Darwin
 import NetworkExtension
 
-// Extracts the file descriptor backing the iOS utun device that
-// NEPacketTunnelFlow sits on top of. Apple does not expose this; the
-// established workaround used by VPN apps that hand the FD to a Go
-// core scans the extension's small fd range and asks the kernel
-// which one is a utun control socket.
-//
-// We don't import <sys/kern_control.h> because the Swift Darwin
-// overlay doesn't surface sockaddr_ctl / SYSPROTO_CONTROL. We use a
-// raw byte buffer for getpeername and the documented constant values:
 //   AF_SYSTEM         = 32  (sys/socket.h)
 //   SYSPROTO_CONTROL  = 2   (sys/sys_domain.h)
 //   UTUN_OPT_IFNAME   = 2   (net/if_utun.h)

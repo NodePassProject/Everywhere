@@ -12,29 +12,21 @@ import NetworkExtension
 
 final class PacketTunnelProvider: NEPacketTunnelProvider {
     private static let tunnelMTU = 1500
-
-    // When the Go core fails to start, we keep the NE alive so the
-    // containing app can fetch the reason via IPC. Calling
-    // `completionHandler(error)` would have the system terminate the NE
-    // before the app gets a chance to read it.
+    
     private var coreError: String?
-
-    // Default-interface tracker. NWPathMonitor fires whenever iOS swaps
-    // the device's underlying physical interface (WiFi↔cellular, hotspot
-    // toggles, airplane mode). Each fire is forwarded to the Go core
-    // via EvcoreUpdateDefaultInterface.
+    
     private var pathMonitor: NWPathMonitor?
     private let pathMonitorQueue = DispatchQueue(label: "com.argsment.Everywhere.pathMonitor", qos: .utility)
+    private var pendingPathUpdate: DispatchWorkItem?
+    private var latestPath: Network.NWPath?
+    private static let pathDebounceInterval: DispatchTimeInterval = .milliseconds(1000)
 
     override func startTunnel(options _: [String: NSObject]?, completionHandler: @escaping (Error?) -> Void) {
         let providerConfig = (protocolConfiguration as? NETunnelProviderProtocol)?.providerConfiguration ?? [:]
         let coreTypeRaw = (providerConfig["coreType"] as? String) ?? CoreType.xray.rawValue
         let coreType = CoreType(rawValue: coreTypeRaw) ?? .xray
         let dnsServers = Self.cleanDNS(providerConfig["dnsServers"] as? [String])
-
-        // Resolve the user's active config from the shared Core Data
-        // store. iOS caps providerConfiguration at 512 KB, so the host
-        // app passes only the UUID and we fetch the row ourselves.
+        
         let configContent: String
         do {
             guard let idString = providerConfig["configID"] as? String,
@@ -67,13 +59,7 @@ final class PacketTunnelProvider: NEPacketTunnelProvider {
                 ))
                 return
             }
-
-            // Point the active core at its own per-core subfolder of
-            // the app group's Resources/ directory before it boots, so
-            // its built-in asset lookups (Xray's xray.location.asset
-            // env, mihomo's $HOME/.config/mihomo, sing-box's relative
-            // paths via CWD) resolve to user-injected files without
-            // colliding on shared filenames like cache.db across cores.
+            
             let resPath = EVCore.resourcesURL(for: coreType).path
             var resErr: NSError?
             if !EvcoreSetResourcesPath(resPath, &resErr), let resErr {
@@ -95,11 +81,7 @@ final class PacketTunnelProvider: NEPacketTunnelProvider {
 
     override func stopTunnel(with _: NEProviderStopReason, completionHandler: @escaping () -> Void) {
         stopPathMonitor()
-        // EvcoreStopAll is a synchronous Go call; on rare occasions it
-        // hasn't returned (e.g. a stuck core goroutine), which leaves
-        // iOS pinned at Disconnecting forever. Run it on a background
-        // queue and guarantee completionHandler fires within a few
-        // seconds either way — iOS will reap the process if needed.
+        
         let lock = NSLock()
         var didComplete = false
         let complete = {
@@ -157,11 +139,7 @@ final class PacketTunnelProvider: NEPacketTunnelProvider {
         ipv4.includedRoutes = [NEIPv4Route.default()]
         ipv4.excludedRoutes = []
         settings.ipv4Settings = ipv4
-
-        // Mirror the IPv6 prefix the cores' TUN inbounds advertise via
-        // ConfigNormalizer (fd00::1/126 — a small ULA range) so iOS
-        // hands v6 packets to our utun, which the gvisor stack then
-        // dispatches the same way as v4.
+        
         let ipv6 = NEIPv6Settings(addresses: ["fd00::1"], networkPrefixLengths: [126])
         ipv6.includedRoutes = [NEIPv6Route.default()]
         ipv6.excludedRoutes = []
@@ -181,15 +159,28 @@ final class PacketTunnelProvider: NEPacketTunnelProvider {
         stopPathMonitor()
         let monitor = NWPathMonitor()
         monitor.pathUpdateHandler = { [weak self] (path: Network.NWPath) in
-            self?.handlePathUpdate(path)
+            self?.schedulePathUpdate(path)
         }
         monitor.start(queue: pathMonitorQueue)
         pathMonitor = monitor
     }
 
     private func stopPathMonitor() {
+        pendingPathUpdate?.cancel()
+        pendingPathUpdate = nil
         pathMonitor?.cancel()
         pathMonitor = nil
+    }
+    
+    private func schedulePathUpdate(_ path: Network.NWPath) {
+        latestPath = path
+        pendingPathUpdate?.cancel()
+        let work = DispatchWorkItem { [weak self] in
+            guard let self, let latest = self.latestPath else { return }
+            self.handlePathUpdate(latest)
+        }
+        pendingPathUpdate = work
+        pathMonitorQueue.asyncAfter(deadline: .now() + Self.pathDebounceInterval, execute: work)
     }
 
     private func handlePathUpdate(_ path: Network.NWPath) {
