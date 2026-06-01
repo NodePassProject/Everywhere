@@ -1,13 +1,13 @@
 {
-  "originHash" : "3879fc504fb69402ece5dcff014b625487e82b23a85d61c90395814217c662c4",
+  "originHash" : "4eda72003edd15f0b85ddab97bd542e0a23101687fce75d99fcb5feca2d48fa3",
   "pins" : [
     {
       "identity" : "everywherecore",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/NodePassProject/EverywhereCore",
       "state" : {
-        "revision" : "bf8903d9dabbbab5393248b804c90dac049d5fa4",
-        "version" : "2026.5.18"
+        "revision" : "ca91539625103251a039581c8fd4b9ac44f89e14",
+        "version" : "2026.6.1"
       }
     },
     {
