@@ -1,0 +1,40 @@
+name: Build Everywhere
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Select Xcode
+      run: |
+        sudo xcode-select -s /Applications/Xcode_26.3.app
+        echo "Selected Xcode version:"
+        xcodebuild -version
+
+    - name: Install iOS Simulator runtime
+      run: |
+        xcodebuild -downloadPlatform iOS
+
+    - name: Install xcodeproj
+      run: gem install xcodeproj -v 1.25.0
+
+    - name: Wire Xcode project
+      run: ruby Scripts/wire_project.rb
+
+    - name: Build
+      run: |
+        xcodebuild \
+          -project Everywhere.xcodeproj \
+          -scheme Everywhere \
+          -sdk iphonesimulator \
+          -destination 'generic/platform=iOS Simulator' \
+          -configuration Debug \
+          CODE_SIGNING_ALLOWED=NO \
+          SKIP_INSTALL=YES \
+          ONLY_ACTIVE_ARCH=YES \
+          COMPILER_INDEX_STORE_ENABLE=NO \
+          build
