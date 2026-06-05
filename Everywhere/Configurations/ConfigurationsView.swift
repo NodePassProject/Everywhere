@@ -176,6 +176,28 @@ struct ConfigurationsView: View {
         }
     }
 
+    private func extractRemarks(from content: String, fallbackUrl: URL) -> String {
+        // JSON
+        if let data = content.data(using: .utf8),
+            let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+            let remarks = json["remarks"] as? String,
+            !remarks.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                return remarks.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+
+        // YAML
+        /* for line in content.components(separatedBy: .newlines) {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            guard trimmed.hasPrefix("remarks:") else { continue }
+            let value = String(trimmed.dropFirst(8))
+                .trimmingCharacters(in: .whitespaces)
+                .trimmingCharacters(in: CharacterSet(charactersIn: "\"'"))
+            if !value.isEmpty { return value }
+        } */
+
+        return derivedName(from: fallbackUrl)
+    }
+
     private func handleFileImport(_ result: Result<[URL], Error>) {
         let core = store.selectedCore
         switch result {
@@ -185,7 +207,9 @@ struct ConfigurationsView: View {
             defer { if scoped { url.stopAccessingSecurityScopedResource() } }
             do {
                 let content = try String(contentsOf: url, encoding: .utf8)
-                store.create(name: derivedName(from: url), type: core, content: content)
+
+                // store.create(name: derivedName(from: url), type: core, content: content)
+                store.create(name: extractRemarks(from: content, fallbackUrl: url), type: core, content: content)
             } catch {
                 importErrorMessage = "Could not read \(url.lastPathComponent): \(error.localizedDescription)"
             }
@@ -216,7 +240,10 @@ struct ConfigurationsView: View {
                         userInfo: [NSLocalizedDescriptionKey: "Response is not valid UTF-8 text."]
                     )
                 }
-                store.create(name: derivedName(from: url), type: core, content: content)
+
+                // store.create(name: derivedName(from: url), type: core, content: content)
+                let name = extractRemarks(from: content, fallbackUrl: url)
+                store.create(name: name, type: core, content: content)
             } catch {
                 importErrorMessage = error.localizedDescription
             }
