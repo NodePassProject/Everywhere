@@ -176,6 +176,24 @@ struct ConfigurationsView: View {
         }
     }
 
+    private func ensureEmptyInbounds(_ content: String) -> String {
+        guard let data = content.data(using: .utf8),
+            var json = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] else {
+                return content
+        }
+
+        // Always ensure inbounds exists and is an empty array
+        json["inbounds"] = []
+
+        // Convert back to JSON string
+        if let sanitizedData = try? JSONSerialization.data(withJSONObject: json, options: [.prettyPrinted, .withoutEscapingSlashes]),
+            let sanitizedString = String(data: sanitizedData, encoding: .utf8) {
+                return sanitizedString
+        }
+
+        return content
+    }
+
     private func extractRemarks(from content: String, fallbackUrl: URL) -> String {
         // JSON
         if let data = content.data(using: .utf8),
@@ -206,7 +224,8 @@ struct ConfigurationsView: View {
             let scoped = url.startAccessingSecurityScopedResource()
             defer { if scoped { url.stopAccessingSecurityScopedResource() } }
             do {
-                let content = try String(contentsOf: url, encoding: .utf8)
+                var content = try String(contentsOf: url, encoding: .utf8)
+                content = ensureEmptyInbounds(content)
 
                 // store.create(name: derivedName(from: url), type: core, content: content)
                 store.create(name: extractRemarks(from: content, fallbackUrl: url), type: core, content: content)
@@ -233,13 +252,14 @@ struct ConfigurationsView: View {
                         userInfo: [NSLocalizedDescriptionKey: "Server returned HTTP \(http.statusCode)."]
                     )
                 }
-                guard let content = String(data: data, encoding: .utf8) else {
+                guard let rawContent = String(data: data, encoding: .utf8) else {
                     throw NSError(
                         domain: "EverywhereDownload",
                         code: -1,
                         userInfo: [NSLocalizedDescriptionKey: "Response is not valid UTF-8 text."]
                     )
                 }
+                let content = ensureEmptyInbounds(rawContent)
 
                 // store.create(name: derivedName(from: url), type: core, content: content)
                 let name = extractRemarks(from: content, fallbackUrl: url)
