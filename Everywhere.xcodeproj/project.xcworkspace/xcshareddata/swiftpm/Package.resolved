@@ -6,8 +6,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/NodePassProject/EverywhereCore",
       "state" : {
-        "revision" : "ca91539625103251a039581c8fd4b9ac44f89e14",
-        "version" : "2026.6.1"
+        "revision" : "cb546c1cf42a0a6c997e791cc893b2d477d09cb3",
+        "version" : "2026.6.10"
       }
     },
     {
