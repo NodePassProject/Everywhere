@@ -11,6 +11,9 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT"
 
+# wire_project.rb needs the xcodeproj gem; install it (user dir, no sudo) if absent.
+ruby -e "require 'xcodeproj'" 2>/dev/null || gem install --user-install xcodeproj
+
 ruby Scripts/wire_project.rb
 
 if [[ "${1:-}" == "--build-app" ]]; then
