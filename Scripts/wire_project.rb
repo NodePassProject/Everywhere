@@ -22,8 +22,6 @@ EVERYWHERE_CORE_PRODUCT     = 'EverywhereCore'
 
 RUNESTONE_URL = 'https://github.com/simonbs/Runestone'
 RUNESTONE_REQ = { 'kind' => 'upToNextMajorVersion', 'minimumVersion' => '0.5.0' }
-YAML_URL      = 'https://github.com/Argsment/YAML'
-YAML_REQ      = { 'kind' => 'branch', 'branch' => 'main' }
 TS_LANG_URL   = 'https://github.com/simonbs/TreeSitterLanguages'
 TS_LANG_REQ   = { 'kind' => 'upToNextMajorVersion', 'minimumVersion' => '0.1.10' }
 TS_LANG_PRODUCTS = %w[TreeSitterJSONRunestone TreeSitterYAMLRunestone]
@@ -101,6 +99,35 @@ def link_product(target, project, dep)
   phase.files << bf
 end
 
+# Inverse of ensure_swift_package + add_product_dep + link_product: strip a
+# package's Frameworks build-file entries and product dependencies from every
+# target, then remove the dependency and package objects themselves. Objects
+# are matched by ISA rather than list membership, so it also sweeps refs left
+# orphaned by an earlier partial run; deleting a list entry alone leaves the
+# object in the pbxproj, so remove_from_project is explicit (cf. the stale
+# xcframework teardown above). A no-op when absent, so re-running self-heals.
+def remove_swift_package(project, url)
+  pkg = project.objects.find do |o|
+    o.isa == 'XCRemoteSwiftPackageReference' && o.repositoryURL == url
+  end
+  return unless pkg
+
+  project.objects.select do |o|
+    o.isa == 'XCSwiftPackageProductDependency' && o.package == pkg
+  end.each do |dep|
+    project.targets.each do |target|
+      target.frameworks_build_phase.files.select { |bf| bf.product_ref == dep }.each do |bf|
+        target.frameworks_build_phase.files.delete(bf)
+      end
+      target.package_product_dependencies.delete(dep)
+    end
+    dep.remove_from_project
+  end
+
+  project.root_object.package_references.delete(pkg)
+  pkg.remove_from_project
+end
+
 # --- EverywhereCore (both targets) ---------------------------------------
 core_pkg = ensure_swift_package(project, EVERYWHERE_CORE_REPO, EVERYWHERE_CORE_REQ)
 core_app_dep = add_product_dep(app_target, project, core_pkg, EVERYWHERE_CORE_PRODUCT)
@@ -127,7 +154,7 @@ if stale_embed
   end
 end
 
-# --- Runestone + TreeSitterLanguages + YAML (app target only) ------------
+# --- Runestone + TreeSitterLanguages (app target only) -------------------
 runestone_pkg = ensure_swift_package(project, RUNESTONE_URL, RUNESTONE_REQ)
 link_product(app_target, project, add_product_dep(app_target, project, runestone_pkg, 'Runestone'))
 
@@ -136,8 +163,10 @@ TS_LANG_PRODUCTS.each do |product|
   link_product(app_target, project, add_product_dep(app_target, project, ts_lang_pkg, product))
 end
 
-yaml_pkg = ensure_swift_package(project, YAML_URL, YAML_REQ)
-link_product(app_target, project, add_product_dep(app_target, project, yaml_pkg, 'YAML'))
+# YAML (Argsment/YAML) was wired here but no source imports it — mihomo
+# config handling is string-based, not a real YAML parse. Tear down any
+# lingering wiring from projects generated before it was retired.
+remove_swift_package(project, 'https://github.com/Argsment/YAML')
 
 # --- libresolv.tbd (Go runtime's DNS resolver needs it) ------------------
 def link_system_lib(target, project, name, sdk_path)
@@ -225,4 +254,4 @@ end
 end
 
 project.save
-puts "Wired EverywhereCore (>= #{EVERYWHERE_CORE_MIN_VERSION}, SwiftPM) + Runestone + YAML + zashboard into #{PROJECT_PATH}"
+puts "Wired EverywhereCore (>= #{EVERYWHERE_CORE_MIN_VERSION}, SwiftPM) + Runestone + zashboard into #{PROJECT_PATH}"

@@ -14,7 +14,6 @@
 		7FAB6E1B99843FBC3CEF9BD3 /* TreeSitterYAMLRunestone in Frameworks */ = {isa = PBXBuildFile; productRef = 41465227A138948FE50A7E53 /* TreeSitterYAMLRunestone */; };
 		8A430E870A41435438F9F399 /* EverywhereCore in Frameworks */ = {isa = PBXBuildFile; productRef = B672C232E19E5E5F670A2F6D /* EverywhereCore */; };
 		8DA46DEAF1392B6586DBC9FC /* libresolv.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = AD2724A4F89A96B133F540CB /* libresolv.tbd */; };
-		A78206970BAAF8CCD3B217E1 /* YAML in Frameworks */ = {isa = PBXBuildFile; productRef = 11BD894B2A4F62DC576EB84A /* YAML */; };
 		CB0BA4282FA6277800E37B2C /* NetworkExtension.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CB0BA4272FA6277800E37B2C /* NetworkExtension.framework */; };
 		CB0BA4302FA6277800E37B2C /* EverywhereNE.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = CB0BA4252FA6277800E37B2C /* EverywhereNE.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		E21CF12D020F260C78EF147B /* zashboard in Resources */ = {isa = PBXBuildFile; fileRef = 1197532FC5218FEC63D188EA /* zashboard */; };
@@ -72,6 +71,8 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		9972969AE7F1F3E248C5CD1D /* Shared */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
 			path = Shared;
 			sourceTree = "<group>";
 		};
@@ -103,7 +104,6 @@
 				61E757C0609660122F8F2D98 /* TreeSitterJSONRunestone in Frameworks */,
 				7FAB6E1B99843FBC3CEF9BD3 /* TreeSitterYAMLRunestone in Frameworks */,
 				8A430E870A41435438F9F399 /* EverywhereCore in Frameworks */,
-				A78206970BAAF8CCD3B217E1 /* YAML in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -177,7 +177,6 @@
 				5FC290B307CFBBDCAEB9AB4E /* TreeSitterJSONRunestone */,
 				41465227A138948FE50A7E53 /* TreeSitterYAMLRunestone */,
 				B672C232E19E5E5F670A2F6D /* EverywhereCore */,
-				11BD894B2A4F62DC576EB84A /* YAML */,
 			);
 			productName = Everywhere;
 			productReference = CB0BA4102FA6272C00E37B2C /* Everywhere.app */;
@@ -239,7 +238,6 @@
 				803E3EBB055B6F1C161E71E9 /* XCRemoteSwiftPackageReference "Runestone" */,
 				21BE8ADEADB6191676A9B4DB /* XCRemoteSwiftPackageReference "TreeSitterLanguages" */,
 				2B8487E04E12B2EE3EBD6BE7 /* XCRemoteSwiftPackageReference "EverywhereCore" */,
-				537A4FC4468F30AD8CB124D5 /* XCRemoteSwiftPackageReference "YAML" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = CB0BA4112FA6272C00E37B2C /* Products */;
@@ -604,14 +602,6 @@
 				minimumVersion = 2026.05.18;
 			};
 		};
-		537A4FC4468F30AD8CB124D5 /* XCRemoteSwiftPackageReference "YAML" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/Argsment/YAML";
-			requirement = {
-				branch = main;
-				kind = branch;
-			};
-		};
 		803E3EBB055B6F1C161E71E9 /* XCRemoteSwiftPackageReference "Runestone" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/simonbs/Runestone";
@@ -623,11 +613,6 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		11BD894B2A4F62DC576EB84A /* YAML */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 537A4FC4468F30AD8CB124D5 /* XCRemoteSwiftPackageReference "YAML" */;
-			productName = YAML;
-		};
 		41465227A138948FE50A7E53 /* TreeSitterYAMLRunestone */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 21BE8ADEADB6191676A9B4DB /* XCRemoteSwiftPackageReference "TreeSitterLanguages" */;

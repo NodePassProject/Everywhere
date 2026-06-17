@@ -1,5 +1,5 @@
 {
-  "originHash" : "3879fc504fb69402ece5dcff014b625487e82b23a85d61c90395814217c662c4",
+  "originHash" : "4eda72003edd15f0b85ddab97bd542e0a23101687fce75d99fcb5feca2d48fa3",
   "pins" : [
     {
       "identity" : "everywherecore",
@@ -35,15 +35,6 @@
       "state" : {
         "revision" : "15cf3a9ec3ab95e0d058b7df9f35619123c9e02d",
         "version" : "0.1.10"
-      }
-    },
-    {
-      "identity" : "yaml",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/Argsment/YAML",
-      "state" : {
-        "branch" : "main",
-        "revision" : "1cc58b32e84fa7259a49b046072fa3a44701e4b7"
       }
     }
   ],
