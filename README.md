@@ -35,22 +35,22 @@ you move between them whenever you like.
 
 | Protocol         | Xray-core    | sing-box     | mihomo       | Everywhere   |
 |------------------|--------------|--------------|--------------|--------------|
-| VLESS            | ✓            | ✓            | ✓            | ✓            |
-| VMess            | ✓            | ✓            | ✓            | ✓            |
-| Trojan           | ✓            | ✓            | ✓            | ✓            |
-| Shadowsocks      | ✓            | ✓            | ✓            | ✓            |
-| ShadowsocksR     | —            | ✓            | ✓            | ✓            |
-| Hysteria2        | ✓            | ✓            | ✓            | ✓            |
-| WireGuard        | ✓            | ✓            | ✓            | ✓            |
-| Naive            | —            | ✓            | —            | —            |
-| TUIC             | —            | ✓ (v5)       | ✓ (v4 + v5)  | ✓ (v4 + v5)  |
-| AnyTLS           | —            | ✓            | ✓            | ✓            |
-| Sudoku           | —            | —            | ✓            | ✓            |
-| Tor              | —            | ✓            | —            | ✓            |
-| SSH              | —            | ✓            | ✓            | ✓            |
-| SOCKS            | ✓            | ✓            | ✓            | ✓            |
-| HTTP             | ✓            | ✓            | ✓            | ✓            |
-| Tailscale        | —            | ✓            | ✓            | ✓            |
+| VLESS            | [✓](https://core-tutorial.argsment.com/xray/vless) | [✓](https://core-tutorial.argsment.com/singbox/vless) | [✓](https://core-tutorial.argsment.com/mihomo/vless) | ✓ |
+| VMess            | [✓](https://core-tutorial.argsment.com/xray/vmess) | [✓](https://core-tutorial.argsment.com/singbox/vmess) | [✓](https://core-tutorial.argsment.com/mihomo/vmess) | ✓ |
+| Trojan           | [✓](https://core-tutorial.argsment.com/xray/trojan) | [✓](https://core-tutorial.argsment.com/singbox/trojan) | [✓](https://core-tutorial.argsment.com/mihomo/trojan) | ✓ |
+| Shadowsocks      | [✓](https://core-tutorial.argsment.com/xray/shadowsocks) | [✓](https://core-tutorial.argsment.com/singbox/shadowsocks) | [✓](https://core-tutorial.argsment.com/mihomo/shadowsocks) | ✓ |
+| ShadowsocksR     | — | [✓](https://core-tutorial.argsment.com/singbox/ssr) | [✓](https://core-tutorial.argsment.com/mihomo/ssr) | ✓ |
+| Hysteria2        | [✓](https://core-tutorial.argsment.com/xray/hysteria2) | [✓](https://core-tutorial.argsment.com/singbox/hysteria2) | [✓](https://core-tutorial.argsment.com/mihomo/hysteria2) | ✓ |
+| WireGuard        | [✓](https://core-tutorial.argsment.com/xray/wireguard) | [✓](https://core-tutorial.argsment.com/singbox/wireguard) | [✓](https://core-tutorial.argsment.com/mihomo/wireguard) | ✓ |
+| Naive            | — | [✓](https://core-tutorial.argsment.com/singbox/naive) | — | — |
+| TUIC             | — | [✓](https://core-tutorial.argsment.com/singbox/tuic) (v5) | [✓](https://core-tutorial.argsment.com/mihomo/tuic) (v4 + v5) | ✓ (v4 + v5) |
+| AnyTLS           | — | [✓](https://core-tutorial.argsment.com/singbox/anytls) | [✓](https://core-tutorial.argsment.com/mihomo/anytls) | ✓ |
+| Sudoku           | — | — | [✓](https://core-tutorial.argsment.com/mihomo/sudoku) | ✓ |
+| Tor              | — | [✓](https://core-tutorial.argsment.com/singbox/tor) | — | ✓ |
+| SSH              | — | [✓](https://core-tutorial.argsment.com/singbox/ssh) | [✓](https://core-tutorial.argsment.com/mihomo/ssh) | ✓ |
+| SOCKS            | [✓](https://core-tutorial.argsment.com/xray/http-socks) | [✓](https://core-tutorial.argsment.com/singbox/http-socks) | [✓](https://core-tutorial.argsment.com/mihomo/http-socks) | ✓ |
+| HTTP             | [✓](https://core-tutorial.argsment.com/xray/http-socks) | [✓](https://core-tutorial.argsment.com/singbox/http-socks) | [✓](https://core-tutorial.argsment.com/mihomo/http-socks) | ✓ |
+| Tailscale        | — | [✓](https://core-tutorial.argsment.com/singbox/tailscale) | [✓](https://core-tutorial.argsment.com/mihomo/tailscale) | ✓ |
 
 ## Supported Cores
 
