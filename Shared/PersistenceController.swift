@@ -93,11 +93,11 @@ final class PersistenceController {
         entity.name = "Configuration"
         entity.managedObjectClassName = NSStringFromClass(Configuration.self)
 
-        func attr(_ name: String, _ type: NSAttributeType, defaultValue: Any? = nil) -> NSAttributeDescription {
+        func attr(_ name: String, _ type: NSAttributeType, optional: Bool = false, defaultValue: Any? = nil) -> NSAttributeDescription {
             let a = NSAttributeDescription()
             a.name = name
             a.attributeType = type
-            a.isOptional = false
+            a.isOptional = optional
             if let defaultValue { a.defaultValue = defaultValue }
             return a
         }
@@ -109,6 +109,7 @@ final class PersistenceController {
             attr("content", .stringAttributeType, defaultValue: ""),
             attr("createdAt", .dateAttributeType),
             attr("updatedAt", .dateAttributeType),
+            attr("sourceURL", .stringAttributeType, optional: true),
         ]
 
         let model = NSManagedObjectModel()

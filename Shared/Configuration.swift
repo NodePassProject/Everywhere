@@ -16,6 +16,7 @@ public final class Configuration: NSManagedObject, Identifiable {
     @NSManaged public var content: String
     @NSManaged public var createdAt: Date
     @NSManaged public var updatedAt: Date
+    @NSManaged public var sourceURL: String?
 }
 
 extension Configuration {

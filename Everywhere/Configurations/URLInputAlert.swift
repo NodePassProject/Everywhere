@@ -7,9 +7,6 @@
 
 import UIKit
 
-// Mirrors NameInputAlert: drops down to UIAlertController so we keep
-// working on iOS 15 where SwiftUI's `.alert` doesn't yet have a
-// TextField action.
 enum URLInputAlert {
     static func present(
         title: String,
@@ -30,7 +27,7 @@ enum URLInputAlert {
 
         alert.addAction(UIAlertAction(title: String(localized: "Cancel"), style: .cancel))
 
-        let submit = UIAlertAction(title: String(localized: "Download"), style: .default) { _ in
+        let submit = UIAlertAction(title: String(localized: "Subscribe"), style: .default) { _ in
             let raw = alert.textFields?.first?.text ?? ""
             guard let url = parsed(raw) else { return }
             onSubmit(url)
