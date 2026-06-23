@@ -19,15 +19,9 @@ final class TunnelManager: ObservableObject {
     @Published private(set) var pendingReconnect: Bool = false
     private var manager: NETunnelProviderManager?
     private var statusObserver: AnyCancellable?
-
-    // True once the tunnel has reached .connected in the current
-    // session. We only tear on-demand down for *initial* connect
-    // failures (broken config); a tunnel that worked and later drops
-    // mid-session should stay in iOS's on-demand retry loop.
+    
     private var didConnect: Bool = false
-
-    // Backstop for when iOS sits in Connecting or Disconnecting
-    // indefinitely — usually because the NE or its Go core hung.
+    
     private var transitionTimeoutTask: Task<Void, Never>?
     private static let transitionTimeoutNanos: UInt64 = 30 * 1_000_000_000
 
@@ -46,9 +40,6 @@ final class TunnelManager: ObservableObject {
             self.status = m.connection.status
             self.isReady = true
             if m.connection.status == .connected {
-                // The tunnel was already up from a previous launch —
-                // treat it as having connected so a later transient
-                // failure isn't misread as an initial failure.
                 self.didConnect = true
                 queryCoreStatus()
             }
@@ -72,7 +63,6 @@ final class TunnelManager: ObservableObject {
                 )
                 try m.connection.startVPNTunnel()
             } else {
-                // An explicit disable should never auto-reconnect.
                 pendingReconnect = false
                 try await disableTunnel()
             }
@@ -81,10 +71,7 @@ final class TunnelManager: ObservableObject {
             lastError = error.localizedDescription
         }
     }
-
-    /// Stop the running tunnel and let the status observer reconnect once
-    /// it transitions to `.disconnected`. Used when an Always-On change
-    /// needs the on-demand rules re-applied while the tunnel is up.
+    
     func reconnect() async {
         guard manager != nil, status.isActive else { return }
         do {
@@ -92,6 +79,29 @@ final class TunnelManager: ObservableObject {
             try await disableTunnel()
         } catch {
             pendingReconnect = false
+            lastError = error.localizedDescription
+        }
+    }
+    
+    func applyAlwaysOn(_ enabled: Bool) async {
+        if status.isActive {
+            await reconnect()
+            return
+        }
+        
+        guard !enabled else { return }
+        
+        do {
+            let managers = try await NETunnelProviderManager.loadAllFromPreferences()
+            guard let m = managers.first(where: {
+                ($0.protocolConfiguration as? NETunnelProviderProtocol)?
+                    .providerBundleIdentifier == EVCore.Identifier.networkExtension
+            }), m.isOnDemandEnabled else { return }
+            m.isOnDemandEnabled = false
+            m.onDemandRules = nil
+            try await m.saveToPreferences()
+            manager = m
+        } catch {
             lastError = error.localizedDescription
         }
     }
@@ -105,9 +115,6 @@ final class TunnelManager: ObservableObject {
         let proto = (m.protocolConfiguration as? NETunnelProviderProtocol) ?? NETunnelProviderProtocol()
         proto.providerBundleIdentifier = EVCore.Identifier.networkExtension
         proto.serverAddress = "Everywhere"
-        // Carry only metadata — iOS caps providerConfiguration at 512 KB,
-        // and large rulesets blow past that. The NE reads the active
-        // config's `content` directly from the shared Core Data store.
         proto.providerConfiguration = [
             "coreType": coreType.rawValue,
             "configID": configID.uuidString,
@@ -140,12 +147,7 @@ final class TunnelManager: ObservableObject {
         manager = m
         return m
     }
-
-    /// Disable the manager's on-demand flag (so iOS doesn't immediately
-    /// relaunch the NE) and then stop the tunnel. The user's Always On
-    /// preference in `AppState` is intentionally not touched here —
-    /// `ensureManager` re-reads it on the next start and re-applies the
-    /// on-demand rules accordingly.
+    
     private func disableTunnel() async throws {
         guard let m = manager else { return }
         if m.isOnDemandEnabled {
@@ -182,17 +184,7 @@ final class TunnelManager: ObservableObject {
                 }
             }
     }
-
-    // A Connecting -> Disconnected transition that never reached
-    // Connected is a failed start. With on-demand on, iOS would
-    // relaunch the NE into the same broken config forever — disable
-    // the manager's on-demand flag (the user's Always On preference
-    // in AppState is left untouched, so on-demand re-applies on the
-    // next start).
-    //
-    // Only initial failures qualify: once `didConnect` is true the
-    // tunnel worked in this session, so a later drop stays in iOS's
-    // on-demand retry loop instead of being shut down here.
+    
     private func trackConnectFailures(previous: NEVPNStatus, current: NEVPNStatus) {
         guard !didConnect,
               let m = manager, m.isOnDemandEnabled,
@@ -217,11 +209,7 @@ final class TunnelManager: ObservableObject {
             }
         }
     }
-
-    // Last-resort recovery for a tunnel wedged in Connecting or
-    // Disconnecting. Drops on-demand so iOS will not relaunch the NE
-    // and asks the connection to stop; if the NE itself is hung this
-    // at least leaves the user a clear error to act on.
+    
     private func forceReset() async {
         pendingReconnect = false
         do {
@@ -233,42 +221,28 @@ final class TunnelManager: ObservableObject {
             lastError = error.localizedDescription
         }
     }
-
-    // The NE keeps itself alive on a core start failure so we can fetch the
-    // reason here. When the response says the core isn't running, surface
-    // the message and tear the tunnel down — the NE has nothing useful to
-    // route through, but iOS thinks it's connected.
+    
     private func queryCoreStatus() {
         guard let session = manager?.connection as? NETunnelProviderSession else { return }
         let message: [String: Any] = ["type": "core-status"]
         guard let data = try? JSONSerialization.data(withJSONObject: message) else { return }
-        do {
-            try session.sendProviderMessage(data) { [weak self] response in
-                guard let self,
-                      let response,
-                      let json = try? JSONSerialization.jsonObject(with: response) as? [String: Any]
-                else { return }
-                let running = json["running"] as? Bool ?? true
-                let error = json["error"] as? String
-                DispatchQueue.main.async {
-                    // Status may have changed while the IPC was in flight;
-                    // only mark the core as running if we're still connected.
-                    guard self.status == .connected else { return }
-                    if running {
-                        self.coreRunning = true
-                    } else {
-                        self.coreRunning = false
-                        self.lastError = error ?? "Core failed to start."
-                        // Disable on-demand before stopping — otherwise iOS
-                        // immediately relaunches the NE into the same failed
-                        // config and the tunnel loops between Connecting and
-                        // Disconnecting.
-                        Task { try? await self.disableTunnel() }
-                    }
+        try? session.sendProviderMessage(data) { [weak self] response in
+            guard let self,
+                  let response,
+                  let json = try? JSONSerialization.jsonObject(with: response) as? [String: Any]
+            else { return }
+            let running = json["running"] as? Bool ?? true
+            let error = json["error"] as? String
+            DispatchQueue.main.async {
+                guard self.status == .connected else { return }
+                if running {
+                    self.coreRunning = true
+                } else {
+                    self.coreRunning = false
+                    self.lastError = error ?? "Core failed to start."
+                    Task { try? await self.disableTunnel() }
                 }
             }
-        } catch {
-            // ignore — NE may have died between the status flip and the send
         }
     }
 }

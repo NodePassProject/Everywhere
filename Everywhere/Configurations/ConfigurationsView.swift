@@ -28,10 +28,13 @@ struct ConfigurationsView: View {
                     row(for: config)
                 }
                 .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                    Button(role: .destructive) {
-                        pendingDelete = config
-                    } label: {
-                        Label("Delete", systemImage: "trash")
+                    if config.sourceURL != nil {
+                        Button {
+                            updateSubscription(config)
+                        } label: {
+                            Label("Update", systemImage: "arrow.clockwise")
+                        }
+                        .tint(.green)
                     }
                     Button {
                         promptRename(config)
@@ -39,6 +42,11 @@ struct ConfigurationsView: View {
                         Label("Rename", systemImage: "pencil")
                     }
                     .tint(.blue)
+                    Button(role: .destructive) {
+                        pendingDelete = config
+                    } label: {
+                        Label("Delete", systemImage: "trash")
+                    }
                 }
             }
         }
@@ -61,9 +69,9 @@ struct ConfigurationsView: View {
                             Label("Import from file", systemImage: "doc")
                         }
                         Button {
-                            promptDownload()
+                            promptSubscribe()
                         } label: {
-                            Label("Download from URL", systemImage: "arrow.down.circle")
+                            Label("Subscribe", systemImage: "link")
                         }
                     } label: {
                         Image(systemName: "plus")
@@ -109,7 +117,14 @@ struct ConfigurationsView: View {
                 .onTapGesture {
                     activate(config)
                 }
-            Text(config.name)
+            VStack(alignment: .leading) {
+                Text(config.name)
+                    .lineLimit(1)
+                Text(config.sourceURL ?? "Local")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
             Spacer()
         }
         .contentShape(Rectangle())
@@ -166,11 +181,11 @@ struct ConfigurationsView: View {
         }
     }
 
-    private func promptDownload() {
+    private func promptSubscribe() {
         let core = store.selectedCore
         URLInputAlert.present(
-            title: String(localized: "Download \(core.displayName) configuration"),
-            message: String(localized: "Enter a URL to download the configuration from.")
+            title: String(localized: "Subscribe to \(core.displayName) configuration"),
+            message: String(localized: "Enter a subscription URL.")
         ) { url in
             download(from: url, for: core)
         }
@@ -207,8 +222,6 @@ struct ConfigurationsView: View {
             defer { if scoped { url.stopAccessingSecurityScopedResource() } }
             do {
                 let content = try String(contentsOf: url, encoding: .utf8)
-
-                // store.create(name: derivedName(from: url), type: core, content: content)
                 store.create(name: extractRemarks(from: content, fallbackUrl: url), type: core, content: content)
             } catch {
                 importErrorMessage = "Could not read \(url.lastPathComponent): \(error.localizedDescription)"
@@ -223,31 +236,48 @@ struct ConfigurationsView: View {
         Task {
             defer { Task { @MainActor in isDownloading = false } }
             do {
-                var request = URLRequest(url: url)
-                request.setValue("Everywhere/1.0 Clash/1.11.0", forHTTPHeaderField: "User-Agent")
-                let (data, response) = try await URLSession.shared.data(for: request)
-                if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
-                    throw NSError(
-                        domain: "EverywhereDownload",
-                        code: http.statusCode,
-                        userInfo: [NSLocalizedDescriptionKey: "Server returned HTTP \(http.statusCode)."]
-                    )
-                }
-                guard let content = String(data: data, encoding: .utf8) else {
-                    throw NSError(
-                        domain: "EverywhereDownload",
-                        code: -1,
-                        userInfo: [NSLocalizedDescriptionKey: "Response is not valid UTF-8 text."]
-                    )
-                }
-
-                // store.create(name: derivedName(from: url), type: core, content: content)
+                let content = try await fetchConfig(from: url)
                 let name = extractRemarks(from: content, fallbackUrl: url)
-                store.create(name: name, type: core, content: content)
+                store.create(name: name, type: core, content: content, sourceURL: url.absoluteString)
             } catch {
                 importErrorMessage = error.localizedDescription
             }
         }
+    }
+
+    private func updateSubscription(_ config: Configuration) {
+        guard let raw = config.sourceURL, let url = URL(string: raw) else { return }
+        isDownloading = true
+        Task {
+            defer { Task { @MainActor in isDownloading = false } }
+            do {
+                let content = try await fetchConfig(from: url)
+                store.update(config, content: content)
+            } catch {
+                importErrorMessage = error.localizedDescription
+            }
+        }
+    }
+
+    private func fetchConfig(from url: URL) async throws -> String {
+        var request = URLRequest(url: url)
+        request.setValue("Everywhere/1.0 Clash/1.11.0", forHTTPHeaderField: "User-Agent")
+        let (data, response) = try await URLSession.shared.data(for: request)
+        if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
+            throw NSError(
+                domain: "EverywhereDownload",
+                code: http.statusCode,
+                userInfo: [NSLocalizedDescriptionKey: "Server returned HTTP \(http.statusCode)."]
+            )
+        }
+        guard let content = String(data: data, encoding: .utf8) else {
+            throw NSError(
+                domain: "EverywhereDownload",
+                code: -1,
+                userInfo: [NSLocalizedDescriptionKey: "Response is not valid UTF-8 text."]
+            )
+        }
+        return content
     }
 
     private func derivedName(from url: URL) -> String {

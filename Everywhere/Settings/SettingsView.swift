@@ -77,8 +77,8 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle("Settings")
-            .onChange(of: appState.alwaysOnEnabled) { _ in
-                Task { await tunnel.reconnect() }
+            .onChange(of: appState.alwaysOnEnabled) { newValue in
+                Task { await tunnel.applyAlwaysOn(newValue) }
             }
         }
         .navigationViewStyle(.stack)

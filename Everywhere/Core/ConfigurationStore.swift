@@ -69,12 +69,13 @@ final class ConfigurationStore: ObservableObject {
     }
 
     @discardableResult
-    func create(name: String, type: CoreType, content: String) -> Configuration {
+    func create(name: String, type: CoreType, content: String, sourceURL: String? = nil) -> Configuration {
         let cfg = Configuration(context: context)
         cfg.id = UUID()
         cfg.name = name
         cfg.type = type.rawValue
         cfg.content = content
+        cfg.sourceURL = sourceURL
         cfg.createdAt = Date()
         cfg.updatedAt = Date()
         save()

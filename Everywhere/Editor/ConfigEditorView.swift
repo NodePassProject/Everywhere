@@ -44,6 +44,8 @@ struct ConfigEditorView: UIViewRepresentable {
             textView.backgroundColor = .white
         case .dark:
             textView.backgroundColor = .black
+        @unknown default:
+            textView.backgroundColor = .white
         }
         textView.text = text
     }
