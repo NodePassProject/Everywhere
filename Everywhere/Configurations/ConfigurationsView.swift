@@ -120,7 +120,7 @@ struct ConfigurationsView: View {
             VStack(alignment: .leading) {
                 Text(config.name)
                     .lineLimit(1)
-                Text(config.sourceURL ?? "Local")
+                Text(config.sourceURL ?? String(localized: "Local"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
