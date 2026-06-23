@@ -20,7 +20,7 @@ enum SingBoxNormalizer: JSONCoreNormalizer {
     private static let logFloor = "warn"
     private static let logOrder = ["trace", "debug", "info", "warn", "error", "fatal", "panic"]
 
-    static func normalize(_ content: String) throws -> String {
+    static func normalize(_ content: String, useZashboard: Bool) throws -> String {
         var root = try parseJSONObject(content)
         var inbounds = (root["inbounds"] as? [[String: Any]]) ?? []
         if let first = inbounds.firstIndex(where: { isTunInbound($0, typeKey: "type") }) {
@@ -68,13 +68,16 @@ enum SingBoxNormalizer: JSONCoreNormalizer {
 
         // Pin the Clash API to 127.0.0.1:9090 and discard every other
         // `clash_api` option (external_ui, secret, default_mode,
-        // access_control_*, …). The host app attaches to the
-        // controller by hitting this exact address; a user-supplied
-        // secret or non-loopback bind would lock us out. Leave any
-        // sibling `experimental.*` blocks (e.g. `cache_file`) alone.
-        var experimental = (root["experimental"] as? [String: Any]) ?? [:]
-        experimental["clash_api"] = ["external_controller": clashAPIAddress]
-        root["experimental"] = experimental
+        // access_control_*, …) so the bundled zashboard can attach to the
+        // controller at this exact address; a user-supplied secret or
+        // non-loopback bind would lock it out. Leave any sibling
+        // `experimental.*` blocks (e.g. `cache_file`) alone. With zashboard
+        // off there's nothing to attach, so we leave `clash_api` as written.
+        if useZashboard {
+            var experimental = (root["experimental"] as? [String: Any]) ?? [:]
+            experimental["clash_api"] = ["external_controller": clashAPIAddress]
+            root["experimental"] = experimental
+        }
 
         root["log"] = cappedLog(root["log"] as? [String: Any])
 

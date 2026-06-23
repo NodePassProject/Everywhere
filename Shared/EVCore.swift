@@ -43,21 +43,23 @@ final class EVCore {
     /// settings that default to `false` are omitted because `bool(forKey:)`
     /// already returns `false` for unset keys.
     private static let registeredDefaults: [String: Any] = [
-        UserDefaultsKey.selectedCore: CoreType.xray.rawValue,
         UserDefaultsKey.dnsServers: defaultDNSServers,
+        UserDefaultsKey.selectedCore: CoreType.xray.rawValue,
+        UserDefaultsKey.useZashboard: true,
     ]
 
     // MARK: - UserDefaults Keys
 
     private enum UserDefaultsKey {
-        static let selectedCore = "selectedCore"
         static let activeByCoreType = "activeByCoreType"
         static let alwaysOnEnabled = "alwaysOnEnabled"
+        static let dnsServers = "dnsServers"
+        static let selectedCore = "selectedCore"
         static let tunnelIncludeAPNs = "tunnelIncludeAPNs"
         static let tunnelIncludeAllNetworks = "tunnelIncludeAllNetworks"
         static let tunnelIncludeCellularServices = "tunnelIncludeCellularServices"
         static let tunnelIncludeLocalNetworks = "tunnelIncludeLocalNetworks"
-        static let dnsServers = "dnsServers"
+        static let useZashboard = "useZashboard"
     }
 
     // MARK: - App Group Container
@@ -87,15 +89,6 @@ final class EVCore {
     }
 
     // MARK: - Typed UserDefaults Accessors
-
-    // Selection
-    static func getSelectedCore() -> CoreType {
-        CoreType(rawValue: userDefaults.string(forKey: UserDefaultsKey.selectedCore)!) ?? .xray
-    }
-
-    static func setSelectedCore(_ core: CoreType) {
-        userDefaults.set(core.rawValue, forKey: UserDefaultsKey.selectedCore)
-    }
     
     static func getActiveByCoreType() -> [String: String] {
         userDefaults.dictionary(forKey: UserDefaultsKey.activeByCoreType) as? [String: String] ?? [:]
@@ -104,8 +97,7 @@ final class EVCore {
     static func setActiveByCoreType(_ map: [String: String]) {
         userDefaults.set(map, forKey: UserDefaultsKey.activeByCoreType)
     }
-
-    // Tunnel
+    
     static func getAlwaysOnEnabled() -> Bool {
         userDefaults.bool(forKey: UserDefaultsKey.alwaysOnEnabled)
     }
@@ -113,7 +105,23 @@ final class EVCore {
     static func setAlwaysOnEnabled(_ value: Bool) {
         userDefaults.set(value, forKey: UserDefaultsKey.alwaysOnEnabled)
     }
+    
+    static func getDNSServers() -> [String] {
+        userDefaults.stringArray(forKey: UserDefaultsKey.dnsServers)!
+    }
 
+    static func setDNSServers(_ servers: [String]) {
+        userDefaults.set(servers, forKey: UserDefaultsKey.dnsServers)
+    }
+    
+    static func getSelectedCore() -> CoreType {
+        CoreType(rawValue: userDefaults.string(forKey: UserDefaultsKey.selectedCore)!) ?? .xray
+    }
+
+    static func setSelectedCore(_ core: CoreType) {
+        userDefaults.set(core.rawValue, forKey: UserDefaultsKey.selectedCore)
+    }
+    
     static func getTunnelIncludeAllNetworks() -> Bool {
         userDefaults.bool(forKey: UserDefaultsKey.tunnelIncludeAllNetworks)
     }
@@ -146,11 +154,11 @@ final class EVCore {
         userDefaults.set(value, forKey: UserDefaultsKey.tunnelIncludeCellularServices)
     }
     
-    static func getDNSServers() -> [String] {
-        userDefaults.stringArray(forKey: UserDefaultsKey.dnsServers)!
+    static func getUseZashboard() -> Bool {
+        userDefaults.bool(forKey: UserDefaultsKey.useZashboard)
     }
 
-    static func setDNSServers(_ servers: [String]) {
-        userDefaults.set(servers, forKey: UserDefaultsKey.dnsServers)
+    static func setUseZashboard(_ value: Bool) {
+        userDefaults.set(value, forKey: UserDefaultsKey.useZashboard)
     }
 }

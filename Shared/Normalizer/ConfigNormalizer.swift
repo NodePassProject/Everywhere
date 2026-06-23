@@ -18,12 +18,18 @@ import Foundation
 //
 // We also pin the Clash RESTful API to 127.0.0.1:9090 with no
 // auth, no dashboard, and no CORS allow-list — that's the address
-// the host app attaches to for runtime queries, and a user-supplied
-// secret or non-loopback bind would otherwise lock us out. For
-// sing-box we overwrite `experimental.clash_api` with a single
-// `external_controller` field; for mihomo we strip the user's
+// the bundled zashboard attaches to for runtime queries, and a
+// user-supplied secret or non-loopback bind would otherwise lock us
+// out. For sing-box we overwrite `experimental.clash_api` with a
+// single `external_controller` field; for mihomo we strip the user's
 // top-level `external-controller*`, `external-ui*`,
 // `external-doh-server`, and `secret` keys and append our own.
+//
+// This Clash-API rewriting is the UI-facing half of normalization: it
+// only exists so zashboard can attach. When the user turns zashboard
+// off (`useZashboard == false`) we skip it entirely and leave every
+// controller/UI/secret key exactly as written — only the TUN + log
+// normalization, which the tunnel itself depends on, still runs.
 //
 // TUN strategy: patch the user's TUN inbound (if any) in place to
 // force the fields the iOS NE depends on (type, address, mtu, stack
@@ -42,11 +48,11 @@ import Foundation
 // (`XrayNormalizer`, `SingBoxNormalizer`, `MihomoNormalizer`); this
 // type is just the entry point that dispatches to the right one.
 enum ConfigNormalizer {
-    static func normalize(_ content: String, for core: CoreType) throws -> String {
+    static func normalize(_ content: String, for core: CoreType, useZashboard: Bool) throws -> String {
         switch core {
-        case .xray: return try XrayNormalizer.normalize(content)
-        case .singbox: return try SingBoxNormalizer.normalize(content)
-        case .mihomo: return try MihomoNormalizer.normalize(content)
+        case .xray: return try XrayNormalizer.normalize(content, useZashboard: useZashboard)
+        case .singbox: return try SingBoxNormalizer.normalize(content, useZashboard: useZashboard)
+        case .mihomo: return try MihomoNormalizer.normalize(content, useZashboard: useZashboard)
         }
     }
 }

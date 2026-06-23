@@ -23,7 +23,8 @@ import Foundation
 //  - At any Clash-API surface key (`external-controller*`,
 //    `external-ui*`, `external-doh-server`, `secret`), drop the
 //    entire sub-block; our canonical `external-controller` is
-//    appended at the end.
+//    appended at the end. Both steps run only when zashboard is on;
+//    with it off these keys pass through untouched.
 //  - At `log-level`, cap verbosity down to `logFloor`.
 enum MihomoNormalizer: CoreNormalizer {
     private static let logFloor = "warning"
@@ -66,7 +67,7 @@ enum MihomoNormalizer: CoreNormalizer {
 
     // mihomo's normalize never actually throws — it walks lines and can't
     // fail — but conforms to the throwing `CoreNormalizer` requirement.
-    static func normalize(_ content: String) throws -> String {
+    static func normalize(_ content: String, useZashboard: Bool) throws -> String {
         let normalized = content
             .replacingOccurrences(of: "\r\n", with: "\n")
             .replacingOccurrences(of: "\r", with: "\n")
@@ -79,7 +80,7 @@ enum MihomoNormalizer: CoreNormalizer {
         while i < lines.count {
             let line = lines[i]
 
-            if matchesStrippedTopLevelKey(line) {
+            if useZashboard && matchesStrippedTopLevelKey(line) {
                 i += 1
                 while i < lines.count {
                     if isColumnZeroContent(lines[i]) { break }
@@ -153,10 +154,15 @@ enum MihomoNormalizer: CoreNormalizer {
             output.append("log-level: \(logFloor)")
         }
 
-        if let last = output.last, !last.isEmpty {
-            output.append("")
+        // Append our canonical controller so zashboard can attach. With
+        // zashboard off we skip this (and the strip step above), leaving the
+        // user's external-controller* / external-ui* / secret as written.
+        if useZashboard {
+            if let last = output.last, !last.isEmpty {
+                output.append("")
+            }
+            output.append("external-controller: \(clashAPIAddress)")
         }
-        output.append("external-controller: \(clashAPIAddress)")
 
         return output.joined(separator: "\n")
     }

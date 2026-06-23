@@ -21,7 +21,9 @@ enum XrayNormalizer: JSONCoreNormalizer {
     private static let logFloor = "warning"
     private static let logOrder = ["debug", "info", "warning", "error", "none"]
 
-    static func normalize(_ content: String) throws -> String {
+    // `useZashboard` is accepted for protocol conformance but unused —
+    // Xray exposes no Clash API, so there is no UI surface to gate.
+    static func normalize(_ content: String, useZashboard _: Bool) throws -> String {
         var root = try parseJSONObject(content)
         var inbounds = (root["inbounds"] as? [[String: Any]]) ?? []
         if let first = inbounds.firstIndex(where: { isTunInbound($0, typeKey: "protocol") }) {

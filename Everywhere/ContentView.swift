@@ -49,22 +49,18 @@ struct ContentView: View {
     }
 }
 
-// Fullscreen view shown while the tunnel core is running. Mirrors the
-// macOS sibling: the regular navigation collapses out of the way and
-// the dashboard (or a placeholder for Xray, which has no clash API)
-// takes the whole screen. The disconnect/return controls live in the
-// FloatingMenuButton overlaid by ContentView.
 private struct RunningRootView: View {
     @ObservedObject private var store = ConfigurationStore.shared
+    @ObservedObject private var appState = AppState.shared
 
     var body: some View {
-        if store.selectedCore == .xray {
-            Text("Xray is running")
+        if appState.useZashboardEnabled && store.selectedCore != .xray {
+            DashboardView()
+        } else {
+            Text("\(store.selectedCore.displayName) is running")
                 .font(.title2)
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-        } else {
-            DashboardView()
         }
     }
 }

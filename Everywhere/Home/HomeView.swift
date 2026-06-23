@@ -9,8 +9,9 @@ import NetworkExtension
 import SwiftUI
 
 struct HomeView: View {
-    @ObservedObject private var store = ConfigurationStore.shared
+    @ObservedObject private var appState = AppState.shared
     @ObservedObject private var tunnel = TunnelManager.shared
+    @ObservedObject private var store = ConfigurationStore.shared
     @State private var coreSwitchBlocked = false
 
     var body: some View {
@@ -24,15 +25,17 @@ struct HomeView: View {
                                 .resizable()
                                 .scaledToFit()
                                 .frame(width: 25, height: 25)
+                                .animation(.default, value: store.selectedCore)
                             Text("Tunnel")
                             Spacer()
                             Text(statusText)
                                 .foregroundColor(.secondary)
+                                .animation(.default, value: statusText)
                         }
                     }
                     .disabled(isToggleDisabled)
                 }
-
+                
                 Section {
                     ForEach(CoreType.allCases) { core in
                         HStack {
@@ -63,18 +66,26 @@ struct HomeView: View {
                     }
                 }
 
-                NavigationLink {
-                    ConfigurationsView()
-                } label: {
-                    HStack {
-                        Text("Configurations")
-                            .fixedSize()
-                        Spacer()
-                        Text(store.active?.name ?? "None")
-                            .foregroundColor(.secondary)
-                            .truncationMode(.middle)
+                Section {
+                    NavigationLink {
+                        ConfigurationsView()
+                    } label: {
+                        HStack {
+                            Text("Configurations")
+                                .fixedSize()
+                            Spacer()
+                            Text(store.active?.name ?? "None")
+                                .foregroundColor(.secondary)
+                                .truncationMode(.middle)
+                                .animation(.default, value: store.active?.name)
+                        }
+                        .lineLimit(1)
                     }
-                    .lineLimit(1)
+                }
+                
+                Section {
+                    Toggle("Use zashboard", isOn: $appState.useZashboardEnabled)
+                        .disabled(isToggleDisabled)
                 }
             }
             .navigationTitle("Home")

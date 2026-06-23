@@ -7,13 +7,8 @@
 
 import Foundation
 
-// A config rewriter for one proxy core. `ConfigNormalizer.normalize(_:for:)`
-// dispatches to a concrete conformer (XrayNormalizer / SingBoxNormalizer /
-// MihomoNormalizer) per `CoreType`. Shared constants and the log-verbosity
-// cap live in the protocol extension below so every core reaches them
-// unqualified; JSON-only helpers live on `JSONCoreNormalizer`.
 protocol CoreNormalizer {
-    static func normalize(_ content: String) throws -> String
+    static func normalize(_ content: String, useZashboard: Bool) throws -> String
 }
 
 enum NormalizeError: LocalizedError {

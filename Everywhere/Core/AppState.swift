@@ -34,15 +34,18 @@ final class AppState: ObservableObject {
     @Published var tunnelIncludeCellularServices: Bool {
         didSet { EVCore.setTunnelIncludeCellularServices(tunnelIncludeCellularServices) }
     }
+    
+    @Published var useZashboardEnabled: Bool {
+        didSet { EVCore.setUseZashboard(useZashboardEnabled) }
+    }
 
     private init() {
         self.alwaysOnEnabled = EVCore.getAlwaysOnEnabled()
+        self.dnsServers = EVCore.getDNSServers().isEmpty ? EVCore.defaultDNSServers : EVCore.getDNSServers()
         self.tunnelIncludeAllNetworks = EVCore.getTunnelIncludeAllNetworks()
         self.tunnelIncludeLocalNetworks = EVCore.getTunnelIncludeLocalNetworks()
         self.tunnelIncludeAPNs = EVCore.getTunnelIncludeAPNs()
         self.tunnelIncludeCellularServices = EVCore.getTunnelIncludeCellularServices()
-
-        let stored = EVCore.getDNSServers()
-        self.dnsServers = stored.isEmpty ? EVCore.defaultDNSServers : stored
+        self.useZashboardEnabled = EVCore.getUseZashboard()
     }
 }
