@@ -7,31 +7,10 @@
 
 import Foundation
 
-// mihomo (YAML).
-//
-// mihomo's YAML grammar is loose — it tolerates duplicate keys,
-// mixed tabs/spaces, and other shapes a strict parser rejects. We
-// don't want to gatekeep the user's config, so we walk lines and
-// touch only what has to change:
-//
-//  - At `tun:` (column 0), enter sub-block mode. For each sub-key
-//    in `tunForcedKeys` ∪ `tunStrippedKeys`, drop that line and any
-//    deeper-indented children; everything else (loopback-address,
-//    dns-hijack, route-address, strict-route, udp-timeout,
-//    endpoint-independent-nat, …) passes through. After the block,
-//    inject our forced lines at the sub-block's detected indent.
-//  - At any Clash-API surface key (`external-controller*`,
-//    `external-ui*`, `external-doh-server`, `secret`), drop the
-//    entire sub-block; our canonical `external-controller` is
-//    appended at the end. Both steps run only when zashboard is on;
-//    with it off these keys pass through untouched.
-//  - At `log-level`, cap verbosity down to `logFloor`.
 enum MihomoNormalizer: CoreNormalizer {
     private static let logFloor = "warning"
     private static let logOrder = ["debug", "info", "warning", "error", "silent"]
-
-    // Force-set sub-keys inside `tun:`. We drop the user's version and
-    // emit ours at the end of the block.
+    
     private static let tunForcedKeys: Set<String> = [
         "enable",
         "stack",
@@ -39,19 +18,12 @@ enum MihomoNormalizer: CoreNormalizer {
         "inet4-address",
         "inet6-address",
     ]
-
-    // Stripped sub-keys inside `tun:`. We drop the user's version and
-    // don't emit a replacement — EverywhereCore plumbs the fd through
-    // the Go bridge, and a user-supplied `device` or `file-descriptor`
-    // would compete with that.
+    
     private static let tunStrippedKeys: Set<String> = [
         "device",
         "file-descriptor",
     ]
-
-    // Top-level keys whose entire sub-block we drop wholesale. `tun` is
-    // handled by the sub-key walker below and is intentionally not in
-    // this list.
+    
     private static let strippedTopLevelKeys: [String] = [
         "external-controller",
         "external-controller-tls",
@@ -64,9 +36,7 @@ enum MihomoNormalizer: CoreNormalizer {
         "external-doh-server",
         "secret",
     ]
-
-    // mihomo's normalize never actually throws — it walks lines and can't
-    // fail — but conforms to the throwing `CoreNormalizer` requirement.
+    
     static func normalize(_ content: String, useZashboard: Bool) throws -> String {
         let normalized = content
             .replacingOccurrences(of: "\r\n", with: "\n")
@@ -91,9 +61,6 @@ enum MihomoNormalizer: CoreNormalizer {
 
             if matchesTopLevelKey(line, key: "tun") {
                 sawTunBlock = true
-                // Normalize the header to a bare `tun:` so an inline
-                // scalar (`tun: false`) or trailing comment can't
-                // confuse the YAML parser once we add children.
                 output.append("tun:")
                 i += 1
                 var subIndent: Int? = nil
@@ -105,8 +72,6 @@ enum MihomoNormalizer: CoreNormalizer {
                         if subIndent == nil { subIndent = indent }
                         if tunForcedKeys.contains(key) || tunStrippedKeys.contains(key) {
                             i += 1
-                            // Skip any deeper-indented children of the
-                            // dropped key, tolerating blank lines.
                             while i < lines.count {
                                 let next = lines[i]
                                 if isColumnZeroContent(next) { break }
@@ -153,10 +118,7 @@ enum MihomoNormalizer: CoreNormalizer {
             }
             output.append("log-level: \(logFloor)")
         }
-
-        // Append our canonical controller so zashboard can attach. With
-        // zashboard off we skip this (and the strip step above), leaving the
-        // user's external-controller* / external-ui* / secret as written.
+        
         if useZashboard {
             if let last = output.last, !last.isEmpty {
                 output.append("")
@@ -187,31 +149,21 @@ enum MihomoNormalizer: CoreNormalizer {
         }
         return false
     }
-
-    // True when the line declares a top-level mapping with the given
-    // key. Matches `key:`, `key: <value>`, `key:  # comment`, etc.
-    // — but not `keyfoo:`, `  key:` (nested), or `# key:` (comment).
+    
     private static func matchesTopLevelKey(_ line: String, key: String) -> Bool {
         guard line.hasPrefix(key + ":") else { return false }
         let rest = line.dropFirst(key.count + 1)
         guard let next = rest.first else { return true }
         return next == " " || next == "\t" || next == "#"
     }
-
-    // True when the line has non-whitespace content at column 0 that
-    // isn't a comment. Inside a block we treat blank lines and column-0
-    // comments as still inside; only real content resumes the document.
+    
     private static func isColumnZeroContent(_ line: String) -> Bool {
         guard let first = line.first else { return false }
         if first == " " || first == "\t" { return false }
         if first == "#" { return false }
         return true
     }
-
-    // Returns the bare sub-key on a line like "  loopback-address: …"
-    // or "  stack: gvisor". Returns nil for blank lines, comments, list
-    // items ("  - foo"), or otherwise shapes that don't have a leading
-    // `key:`.
+    
     private static func extractSubKey(_ line: String) -> String? {
         let trimmed = line.drop(while: { $0 == " " || $0 == "\t" })
         guard let first = trimmed.first else { return nil }
@@ -228,9 +180,7 @@ enum MihomoNormalizer: CoreNormalizer {
         }
         return count
     }
-
-    // Extracts the inline scalar after a top-level `key:` on one line,
-    // dropping a trailing `# comment`. mihomo never parses YAML.
+    
     private static func inlineScalarValue(_ line: String, key: String) -> String {
         var rest = line.dropFirst(key.count + 1)
         if let hash = rest.firstIndex(of: "#") { rest = rest[..<hash] }
