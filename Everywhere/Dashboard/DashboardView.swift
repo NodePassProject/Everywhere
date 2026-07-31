@@ -15,13 +15,12 @@ struct DashboardView: View {
     var body: some View {
         GeometryReader { geo in
             ZStack(alignment: .top) {
-                Color(uiColor: bg.bottom)
-                    .ignoresSafeArea()
                 Color(uiColor: bg.top)
                     .frame(maxWidth: .infinity)
                     .frame(height: geo.safeAreaInsets.top)
                     .ignoresSafeArea(edges: .top)
                 ZashboardWebView(store: bg)
+                    .ignoresSafeArea(edges: .bottom)
             }
         }
     }
@@ -47,7 +46,7 @@ private struct ZashboardWebView: UIViewRepresentable {
         ))
         cfg.userContentController = ucc
         let view = WKWebView(frame: .zero, configuration: cfg)
-        view.scrollView.contentInsetAdjustmentBehavior = .automatic
+        view.scrollView.contentInsetAdjustmentBehavior = .never
         view.load(URLRequest(url: ZashboardSchemeHandler.indexURL))
         return view
     }
@@ -69,9 +68,8 @@ private struct ZashboardWebView: UIViewRepresentable {
             guard message.name == SafeAreaColorBridge.messageName,
                   let dict = message.body as? [String: String] else { return }
             let top = SafeAreaColorBridge.parse(dict["top"])
-            let bottom = SafeAreaColorBridge.parse(dict["bottom"])
             DispatchQueue.main.async { [store] in
-                store.update(top: top, bottom: bottom)
+                store.update(top: top)
             }
         }
     }
@@ -81,43 +79,26 @@ private struct ZashboardWebView: UIViewRepresentable {
 
 fileprivate final class SafeAreaBackgroundStore: ObservableObject {
     @Published var top: UIColor
-    @Published var bottom: UIColor
 
     private static let topKey = "ZashboardSafeAreaTop"
-    private static let bottomKey = "ZashboardSafeAreaBottom"
 
     init() {
         let d = UserDefaults.standard
         self.top = Self.unarchive(d.data(forKey: Self.topKey)) ?? Self.defaultTop
-        self.bottom = Self.unarchive(d.data(forKey: Self.bottomKey)) ?? Self.defaultBottom
     }
 
-    func update(top: UIColor?, bottom: UIColor?) {
-        let d = UserDefaults.standard
+    func update(top: UIColor?) {
         if let top, top != self.top {
             self.top = top
-            d.set(Self.archive(top), forKey: Self.topKey)
-        }
-        if let bottom, bottom != self.bottom {
-            self.bottom = bottom
-            d.set(Self.archive(bottom), forKey: Self.bottomKey)
+            UserDefaults.standard.set(Self.archive(top), forKey: Self.topKey)
         }
     }
-
-    // Sensible starting values that follow system appearance, used on
-    // first launch before the WebView posts real colors.
+    
     private static var defaultTop: UIColor {
         UIColor { trait in
             trait.userInterfaceStyle == .dark
                 ? UIColor(red: 33/255, green: 38/255, blue: 47/255, alpha: 1)
                 : .white
-        }
-    }
-    private static var defaultBottom: UIColor {
-        UIColor { trait in
-            trait.userInterfaceStyle == .dark
-                ? UIColor(red: 29/255, green: 34/255, blue: 42/255, alpha: 1)
-                : UIColor(red: 250/255, green: 250/255, blue: 250/255, alpha: 1)
         }
     }
 
@@ -134,13 +115,7 @@ fileprivate final class SafeAreaBackgroundStore: ObservableObject {
 
 private enum SafeAreaColorBridge {
     static let messageName = "safeAreaColors"
-
-    // The script reports two CSS colors back to native:
-    //   top    — `.need-blur` (the sticky CtrlsBar, `bg-base-100`)
-    //   bottom — `.home-page`  (the content wrapper, `bg-base-200`)
-    // Falls back to `#app-content` (also `bg-base-100`) if either
-    // element is absent — e.g. on SetupPage before the main router
-    // mounts.
+    
     static let injectedSource = #"""
     (function () {
       function readBg(selector) {
@@ -151,15 +126,14 @@ private enum SafeAreaColorBridge {
         return c;
       }
       function post() {
-        var fallback = readBg('#app-content') || readBg('html') || readBg('body');
-        var top = readBg('.need-blur') || fallback;
-        var bottom = readBg('.home-page') || fallback;
-        if (!top && !bottom) return;
+        var top = readBg('.need-blur')
+          || readBg('#app-content') || readBg('html') || readBg('body');
+        if (!top) return;
         var bridge = window.webkit
           && window.webkit.messageHandlers
           && window.webkit.messageHandlers.safeAreaColors;
         if (!bridge) return;
-        bridge.postMessage({ top: top || '', bottom: bottom || '' });
+        bridge.postMessage({ top: top });
       }
       // Initial probe after layout settles.
       requestAnimationFrame(function () {
@@ -180,11 +154,11 @@ private enum SafeAreaColorBridge {
       var mql = window.matchMedia('(prefers-color-scheme: dark)');
       if (mql.addEventListener) mql.addEventListener('change', post);
       // Light-weight catch-all in case a deeply nested mutation slips
-      // past the observers (e.g. router transition swapping `.home-page`).
+      // past the observers (e.g. router transition swapping `.need-blur`).
       setInterval(post, 1500);
     })();
     """#
-
+    
     static func parse(_ css: String?) -> UIColor? {
         guard var s = css?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased(),
               !s.isEmpty else { return nil }
