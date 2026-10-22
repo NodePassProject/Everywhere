@@ -17,6 +17,7 @@
 		CB0BA4282FA6277800E37B2C /* NetworkExtension.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CB0BA4272FA6277800E37B2C /* NetworkExtension.framework */; };
 		CB0BA4302FA6277800E37B2C /* EverywhereNE.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = CB0BA4252FA6277800E37B2C /* EverywhereNE.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		E21CF12D020F260C78EF147B /* zashboard in Resources */ = {isa = PBXBuildFile; fileRef = 1197532FC5218FEC63D188EA /* zashboard */; };
+		E5F31B3E04C91921C6D11349 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D18EC54D110E8459E02EA2C3 /* UIKit.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -49,6 +50,7 @@
 		CB0BA4102FA6272C00E37B2C /* Everywhere.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Everywhere.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		CB0BA4252FA6277800E37B2C /* EverywhereNE.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = EverywhereNE.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		CB0BA4272FA6277800E37B2C /* NetworkExtension.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = NetworkExtension.framework; path = System/Library/Frameworks/NetworkExtension.framework; sourceTree = SDKROOT; };
+		D18EC54D110E8459E02EA2C3 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -112,6 +114,7 @@
 				CB0BA4282FA6277800E37B2C /* NetworkExtension.framework in Frameworks */,
 				6489290499024A6A49A18665 /* libresolv.tbd in Frameworks */,
 				21F6AB21D5453421EB6AED73 /* EverywhereCore in Frameworks */,
+				E5F31B3E04C91921C6D11349 /* UIKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -144,6 +147,7 @@
 			children = (
 				CB0BA4272FA6277800E37B2C /* NetworkExtension.framework */,
 				AD2724A4F89A96B133F540CB /* libresolv.tbd */,
+				D18EC54D110E8459E02EA2C3 /* UIKit.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";

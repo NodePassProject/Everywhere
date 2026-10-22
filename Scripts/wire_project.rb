@@ -169,7 +169,7 @@ end
 remove_swift_package(project, 'https://github.com/Argsment/YAML')
 
 # --- libresolv.tbd (Go runtime's DNS resolver needs it) ------------------
-def link_system_lib(target, project, name, sdk_path)
+def link_system_lib(target, project, name, sdk_path, file_type = 'sourcecode.text-based-dylib-definition')
   return if target.frameworks_build_phase.files.any? do |bf|
     bf.file_ref&.path == sdk_path
   end
@@ -178,13 +178,19 @@ def link_system_lib(target, project, name, sdk_path)
     ref = project.frameworks_group.new_file(sdk_path)
     ref.source_tree = 'SDKROOT'
     ref.name = name
-    ref.last_known_file_type = 'sourcecode.text-based-dylib-definition'
+    ref.last_known_file_type = file_type
   end
   target.frameworks_build_phase.add_file_reference(ref)
 end
 
 link_system_lib(ne_target,  project, 'libresolv.tbd', 'usr/lib/libresolv.tbd')
 link_system_lib(app_target, project, 'libresolv.tbd', 'usr/lib/libresolv.tbd')
+
+# --- UIKit.framework (sing-box's device_darwin.m calls UIDevice) ---------
+# The static core doesn't carry its cgo LDFLAGS, and nothing in the NE
+# imports UIKit to autolink it. The app gets it via SwiftUI.
+link_system_lib(ne_target, project, 'UIKit.framework',
+                'System/Library/Frameworks/UIKit.framework', 'wrapper.framework')
 
 # --- IPHONEOS_DEPLOYMENT_TARGET (project + every target) -----------------
 project.build_configurations.each do |config|
