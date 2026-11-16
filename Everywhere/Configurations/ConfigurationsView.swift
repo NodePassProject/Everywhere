@@ -192,23 +192,12 @@ struct ConfigurationsView: View {
     }
 
     private func extractRemarks(from content: String, fallbackUrl: URL) -> String {
-        // JSON
         if let data = content.data(using: .utf8),
             let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
             let remarks = json["remarks"] as? String,
             !remarks.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 return remarks.trimmingCharacters(in: .whitespacesAndNewlines)
         }
-
-        // YAML
-        /* for line in content.components(separatedBy: .newlines) {
-            let trimmed = line.trimmingCharacters(in: .whitespaces)
-            guard trimmed.hasPrefix("remarks:") else { continue }
-            let value = String(trimmed.dropFirst(8))
-                .trimmingCharacters(in: .whitespaces)
-                .trimmingCharacters(in: CharacterSet(charactersIn: "\"'"))
-            if !value.isEmpty { return value }
-        } */
 
         return derivedName(from: fallbackUrl)
     }

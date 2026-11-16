@@ -95,12 +95,6 @@ struct Acknowledgement: Identifiable {
             """
         ),
         Acknowledgement(
-            name: "zashboard",
-            url: URL(string: "https://github.com/Zephyruso/zashboard")!,
-            license: "MIT",
-            licenseText: Licenses.mit(copyright: "Copyright (c) 2024 Zephyruso")
-        ),
-        Acknowledgement(
             name: "Runestone",
             url: URL(string: "https://github.com/simonbs/Runestone")!,
             license: "MIT",

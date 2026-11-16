@@ -41,10 +41,8 @@ enum ResourcesStoreError: LocalizedError {
 }
 
 enum ResourcesStore {
-    /// Per-core root directory (auto-created).
     static func directory(for core: CoreType) -> URL { EVCore.resourcesURL(for: core) }
 
-    /// One-level listing of `url`: folders and regular files, folders first, then alpha within each group.
     static func list(at url: URL) throws -> [ResourceEntry] {
         let children = try FileManager.default.contentsOfDirectory(
             at: url,
@@ -68,8 +66,6 @@ enum ResourcesStore {
         }
     }
 
-    /// Copies `sourceURL` into `destinationDir`, preserving the original filename and replacing any existing file with the same name.
-    /// Caller is responsible for security-scoped resource handling.
     static func importFile(from sourceURL: URL, into destinationDir: URL) throws {
         let scoped = sourceURL.startAccessingSecurityScopedResource()
         defer { if scoped { sourceURL.stopAccessingSecurityScopedResource() } }
@@ -80,8 +76,6 @@ enum ResourcesStore {
         try FileManager.default.copyItem(at: sourceURL, to: dest)
     }
 
-    /// Creates a new subdirectory inside `parent`. Throws if the name contains a path separator,
-    /// resolves to "." / ".." or trims to empty, or if the directory already exists.
     static func createFolder(named rawName: String, in parent: URL) throws {
         let name = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !name.isEmpty, name != ".", name != "..", !name.contains("/") else {
@@ -91,7 +85,6 @@ enum ResourcesStore {
         try FileManager.default.createDirectory(at: dest, withIntermediateDirectories: false)
     }
 
-    /// Removes a single entry. Refuses to remove a non-empty directory.
     static func delete(_ entry: ResourceEntry) throws {
         if entry.kind == .directory {
             let contents = try FileManager.default.contentsOfDirectory(atPath: entry.url.path)

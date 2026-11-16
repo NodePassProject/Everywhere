@@ -12,7 +12,7 @@ see its README and `Scripts/build.sh` if you need to touch the Go side.
 rather than an exact tag:
 
 ```ruby
-EVERYWHERE_CORE_MIN_VERSION = '2026.05.14'
+EVERYWHERE_CORE_MIN_VERSION = '2026.11.15'
 EVERYWHERE_CORE_REQ = { 'kind' => 'upToNextMajorVersion', 'minimumVersion' => EVERYWHERE_CORE_MIN_VERSION }
 ```
 
@@ -32,7 +32,7 @@ on each tag, so only tagged releases are consumable downstream.
 
 | Package                                                    | Targets   | Pin                          |
 | ---------------------------------------------------------- | --------- | ---------------------------- |
-| `NodePassProject/EverywhereCore`                           | app + NE  | `upToNextMajor 2026.05.18`   |
+| `NodePassProject/EverywhereCore`                           | app + NE  | `upToNextMajor 2026.11.15`   |
 | `simonbs/Runestone`                                        | app       | `upToNextMajor 0.5.0`        |
 | `simonbs/TreeSitterLanguages` (JSON + YAML products)       | app       | `upToNextMajor 0.1.10`       |
 | `Argsment/YAML`                                            | app       | `branch main`                |
@@ -59,12 +59,39 @@ an Xcode UI edit reasserts them.
   Adding the product to a Copy Files phase by `productRef` double-
   resolves and fails with `No such file or directory` on the bare
   product name.
-- `ThirdParty/zashboard` registered as a folder reference (blue folder,
-  `lastKnownFileType = folder`) on the app target's Resources phase —
-  zashboard's `index.html` references its bundled assets via relative
-  paths (`./assets/index-*.js`), which only works if Xcode preserves
-  the directory layout on copy. The release build is checked into the
-  repo as a static bundle; there is no source build step.
+- No dashboard resource bundle. The dashboard used to be a prebuilt
+  zashboard checked into `ThirdParty/` and registered as a folder
+  reference on the app target; it is native SwiftUI now, and the wire
+  script removes that reference from projects wired before the change.
+
+## Dashboard ↔ core wiring
+
+The native dashboard (`Everywhere/Dashboard/`) talks to the running
+core in one of two ways, hidden behind `DashboardBackend`:
+
+- **mihomo, sing-box** — the clash API. While the dashboard is enabled
+  `ConfigNormalizer` forces the controller to `127.0.0.1:9090` and sets
+  a `secret`. Loopback is reachable by every app on the device, so the
+  controller is never left open: the Network Extension generates the
+  secret on first start and keeps it in the App Group defaults
+  (`EVCore.makeControllerSecret()`); the app only reads it.
+- **Xray-core** — no clash API. EverywhereCore's `Control(method,
+  params)` serves the dashboard in-process and the app reaches it with
+  `sendProviderMessage` (`{"type": "control", …}` in
+  `PacketTunnelProvider.handleAppMessage`). For traffic figures the
+  normalizer adds `stats: {}` and `policy.system.statsOutbound*`.
+  A balancer pick is an in-memory override in Xray, so it is stored per
+  configuration (`EVCore.setXraySelection`) and replayed by the
+  extension on the next start.
+
+`Control` exists from EverywhereCore `v2026.11.15`, which is why
+`EVERYWHERE_CORE_MIN_VERSION` is pinned there. To develop against a Go
+symbol no release has yet, wire a local checkout:
+
+```bash
+( cd ../EverywhereCore && Scripts/build.sh )
+EVERYWHERE_CORE_PATH=../EverywhereCore ./build.sh
+```
 
 ## NEPacketTunnelProvider on iOS
 

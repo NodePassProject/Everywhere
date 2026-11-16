@@ -8,11 +8,11 @@
 import Foundation
 
 enum ConfigNormalizer {
-    static func normalize(_ content: String, for core: CoreType, useZashboard: Bool) throws -> String {
+    static func normalize(_ content: String, for core: CoreType, tunnel: TunnelNetworkSettings, dashboard: DashboardAccess?) throws -> String {
         switch core {
-        case .xray: return try XrayNormalizer.normalize(content, useZashboard: useZashboard)
-        case .singbox: return try SingBoxNormalizer.normalize(content, useZashboard: useZashboard)
-        case .mihomo: return try MihomoNormalizer.normalize(content, useZashboard: useZashboard)
+        case .xray: return try XrayNormalizer.normalize(content, tunnel: tunnel, dashboard: dashboard)
+        case .singbox: return try SingBoxNormalizer.normalize(content, tunnel: tunnel, dashboard: dashboard)
+        case .mihomo: return try MihomoNormalizer.normalize(content, tunnel: tunnel, dashboard: dashboard)
         }
     }
 }

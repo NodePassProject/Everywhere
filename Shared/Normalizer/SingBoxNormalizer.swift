@@ -11,15 +11,23 @@ enum SingBoxNormalizer: JSONCoreNormalizer {
     private static let logFloor = "warn"
     private static let logOrder = ["trace", "debug", "info", "warn", "error", "fatal", "panic"]
 
-    static func normalize(_ content: String, useZashboard: Bool) throws -> String {
+    private static let strippedClashAPIKeys = [
+        "external_ui",
+        "external_ui_download_url",
+        "external_ui_download_detour",
+        "access_control_allow_origin",
+        "access_control_allow_private_network",
+    ]
+
+    static func normalize(_ content: String, tunnel: TunnelNetworkSettings, dashboard: DashboardAccess?) throws -> String {
         var root = try parseJSONObject(content)
         var inbounds = (root["inbounds"] as? [[String: Any]]) ?? []
         if let first = inbounds.firstIndex(where: { isTunInbound($0, typeKey: "type") }) {
             var patched = inbounds[first]
             patched["type"] = "tun"
             patched["tag"] = everywhereTag
-            patched["address"] = [tunnelPrefix, tunnelPrefix6]
-            patched["mtu"] = tunnelMTU
+            patched["address"] = tunnel.coreAddresses
+            patched["mtu"] = tunnel.mtu
             patched["stack"] = tunStack
             patched.removeValue(forKey: "interface_name")
             patched.removeValue(forKey: "platform")
@@ -29,8 +37,8 @@ enum SingBoxNormalizer: JSONCoreNormalizer {
             inbounds.append([
                 "type": "tun",
                 "tag": everywhereTag,
-                "address": [tunnelPrefix, tunnelPrefix6],
-                "mtu": tunnelMTU,
+                "address": tunnel.coreAddresses,
+                "mtu": tunnel.mtu,
                 "stack": tunStack,
             ])
         }
@@ -42,9 +50,13 @@ enum SingBoxNormalizer: JSONCoreNormalizer {
             root["route"] = route
         }
         
-        if useZashboard {
+        if let dashboard {
             var experimental = (root["experimental"] as? [String: Any]) ?? [:]
-            experimental["clash_api"] = ["external_controller": clashAPIAddress]
+            var clashAPI = (experimental["clash_api"] as? [String: Any]) ?? [:]
+            for key in strippedClashAPIKeys { clashAPI.removeValue(forKey: key) }
+            clashAPI["external_controller"] = clashAPIAddress
+            clashAPI["secret"] = dashboard.secret
+            experimental["clash_api"] = clashAPI
             root["experimental"] = experimental
         }
 

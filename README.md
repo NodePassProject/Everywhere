@@ -80,9 +80,39 @@ you move between them whenever you like.
 - **Total transparency** - Nothing about the tunnel is hidden from
   you. Every byte, every connection, every routing decision shows
   up the moment it happens, right inside the app.
+- **One native dashboard** - Nodes, traffic, connections, rules and
+  logs in the same SwiftUI screens for all three cores. What a core
+  can't do is labelled, not hidden — see the table below.
 - **Engineered isolation** - Three engines in one app, never in
   each other's way. Each lives in its own world, with its own
   files, its own state, its own rules.
+
+## Dashboard
+
+The dashboard that appears while the tunnel is running is the same for
+every core. mihomo and sing-box are driven through their clash API on
+loopback; Xray-core has no such API, so EverywhereCore serves the same
+data in-process.
+
+| Feature                          | Xray-core | sing-box | mihomo |
+|----------------------------------|-----------|----------|--------|
+| Switch node                      | ✓ (balancers) | ✓ (selectors) | ✓ |
+| Pin a node in an automatic group | ✓ | — | ✓ |
+| Latency test                     | ✓ | ✓ | ✓ |
+| Live speed and totals            | ✓ | ✓ | ✓ |
+| Rules                            | ✓ | ✓ | ✓ |
+| Logs                             | ✓ | ✓ | ✓ |
+| Connections (list, close)        | — | ✓ | ✓ |
+| Outbound mode                    | — | ✓ | ✓ |
+| DNS query, flush DNS / fake-IP   | — | ✓ | ✓ |
+| Proxy and rule providers         | — | — | ✓ |
+| Update GEO databases             | — | — | ✓ |
+| Per-outbound traffic totals      | ✓ | — | — |
+
+Xray switches nodes through `routing.balancers`: a balancer shows up as
+a group, and choosing one of its outbounds pins the balancer to it. A
+configuration without balancers still lists every outbound for latency
+tests and traffic totals.
 
 ## Getting Started
 
@@ -95,11 +125,10 @@ cd Everywhere
 open Everywhere.xcodeproj
 ```
 
-`build.sh` wires the `EverywhereCore` SwiftPM dependency + Runestone +
-the bundled zashboard into the Xcode project. The Go cores themselves
-are downloaded as a prebuilt xcframework by SwiftPM on first resolve,
-and the zashboard is checked into `ThirdParty/zashboard/` as a prebuilt
-static bundle — no Node, no pnpm, no Vite step. Plug in your signing
+`build.sh` wires the `EverywhereCore` SwiftPM dependency + Runestone
+into the Xcode project. The Go cores themselves are downloaded as a
+prebuilt xcframework by SwiftPM on first resolve, and the dashboard is
+native SwiftUI — no Node, no pnpm, no Vite step. Plug in your signing
 identity and run on a device or the simulator.
 
 To run an `xcodebuild` simulator smoke test as the final step:
@@ -116,7 +145,6 @@ networking work:
 - [Xray-core](https://github.com/XTLS/Xray-core)
 - [sing-box](https://github.com/SagerNet/sing-box)
 - [mihomo](https://github.com/MetaCubeX/mihomo)
-- [zashboard](https://github.com/Zephyruso/zashboard)
 - [Runestone](https://github.com/simonbs/Runestone)
 
 Huge thanks to everyone who maintains them.

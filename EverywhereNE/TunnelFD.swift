@@ -8,9 +8,6 @@
 import Darwin
 import NetworkExtension
 
-//   AF_SYSTEM         = 32  (sys/socket.h)
-//   SYSPROTO_CONTROL  = 2   (sys/sys_domain.h)
-//   UTUN_OPT_IFNAME   = 2   (net/if_utun.h)
 enum TunnelFD {
     private static let afSystem: UInt8 = 32
     private static let sysprotoControl: Int32 = 2
@@ -31,7 +28,6 @@ enum TunnelFD {
                 getpeername(fd, sa, &saLen)
             }
         }
-        // sockaddr layout: [sa_len(1), sa_family(1), sa_data(...)]
         guard getRes == 0, saBuf[1] == afSystem else { return false }
 
         var nameBuf = [CChar](repeating: 0, count: 96)

@@ -7,7 +7,7 @@
 
 import Foundation
 
-enum CoreType: String, CaseIterable, Identifiable {
+nonisolated enum CoreType: String, CaseIterable, Identifiable, Sendable {
     case xray
     case singbox
     case mihomo

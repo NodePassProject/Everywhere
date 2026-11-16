@@ -9,10 +9,9 @@ import CoreData
 import EverywhereCore
 import Network
 import NetworkExtension
+import os
 
 final class PacketTunnelProvider: NEPacketTunnelProvider {
-    private static let tunnelMTU = 1500
-    
     private var coreError: String?
     
     private var pathMonitor: NWPathMonitor?
@@ -25,8 +24,9 @@ final class PacketTunnelProvider: NEPacketTunnelProvider {
         let providerConfig = (protocolConfiguration as? NETunnelProviderProtocol)?.providerConfiguration ?? [:]
         let coreTypeRaw = (providerConfig["coreType"] as? String) ?? CoreType.xray.rawValue
         let coreType = CoreType(rawValue: coreTypeRaw) ?? .xray
-        let dnsServers = Self.cleanDNS(providerConfig["dnsServers"] as? [String])
+        let networkSettings = EVCore.getTunnelNetworkSettings()
         
+        let configID: UUID
         let configContent: String
         do {
             guard let idString = providerConfig["configID"] as? String,
@@ -35,19 +35,22 @@ final class PacketTunnelProvider: NEPacketTunnelProvider {
                     NSLocalizedDescriptionKey: "missing configID in providerConfiguration"
                 ])
             }
+            configID = id
             let raw = try Self.fetchConfigContent(id: id)
             configContent = try ConfigNormalizer.normalize(
                 raw,
                 for: coreType,
-                useZashboard: EVCore.getUseZashboard()
+                tunnel: networkSettings,
+                dashboard: EVCore.getDashboardEnabled()
+                    ? DashboardAccess(secret: EVCore.makeControllerSecret())
+                    : nil
             )
         } catch {
             completionHandler(error)
             return
         }
 
-        let settings = Self.makeTunnelSettings(mtu: Self.tunnelMTU, dnsServers: dnsServers)
-        setTunnelNetworkSettings(settings) { [weak self] error in
+        setTunnelNetworkSettings(networkSettings.makePacketTunnelSettings()) { [weak self] error in
             guard let self else { return }
             if let error {
                 completionHandler(error)
@@ -71,10 +74,13 @@ final class PacketTunnelProvider: NEPacketTunnelProvider {
             }
 
             var coreErr: NSError?
-            guard EvcoreStartCore(coreType.rawValue, configContent, Int(fd), Self.tunnelMTU, &coreErr) else {
+            guard EvcoreStartCore(coreType.rawValue, configContent, Int(fd), networkSettings.mtu, &coreErr) else {
                 self.coreError = coreErr?.localizedDescription ?? "core failed to start"
                 completionHandler(nil)
                 return
+            }
+            if coreType == .xray {
+                Self.replayXraySelections(configID: configID)
             }
 
             self.startPathMonitor()
@@ -131,32 +137,52 @@ final class PacketTunnelProvider: NEPacketTunnelProvider {
             if let err = coreError { response["error"] = err }
             let data = try? JSONSerialization.data(withJSONObject: response)
             completionHandler?(data)
+        case "runtime":
+            var response: [String: Any] = [
+                "available": UInt64(os_proc_available_memory()),
+            ]
+            if let footprint = Self.memoryFootprint() { response["footprint"] = footprint }
+            completionHandler?(try? JSONSerialization.data(withJSONObject: response))
+        case "control":
+            let method = json["method"] as? String ?? ""
+            let params = json["params"] as? String ?? ""
+            DispatchQueue.global(qos: .userInitiated).async {
+                var error: NSError?
+                let result = EvcoreControl(method, params, &error)
+                let response: [String: Any] = error.map {
+                    ["ok": false, "error": $0.localizedDescription]
+                } ?? ["ok": true, "result": result]
+                completionHandler?(try? JSONSerialization.data(withJSONObject: response))
+            }
         default:
             completionHandler?(nil)
         }
     }
 
-    private static func makeTunnelSettings(mtu: Int, dnsServers: [String]) -> NEPacketTunnelNetworkSettings {
-        let settings = NEPacketTunnelNetworkSettings(tunnelRemoteAddress: "127.0.0.1")
-
-        let ipv4 = NEIPv4Settings(addresses: ["198.18.0.1"], subnetMasks: ["255.255.0.0"])
-        ipv4.includedRoutes = [NEIPv4Route.default()]
-        ipv4.excludedRoutes = []
-        settings.ipv4Settings = ipv4
-        
-        let ipv6 = NEIPv6Settings(addresses: ["fd00::1"], networkPrefixLengths: [126])
-        ipv6.includedRoutes = [NEIPv6Route.default()]
-        ipv6.excludedRoutes = []
-        settings.ipv6Settings = ipv6
-
-        settings.dnsSettings = NEDNSSettings(servers: dnsServers)
-        settings.mtu = NSNumber(value: mtu)
-        return settings
+    private static func replayXraySelections(configID: UUID) {
+        for (balancer, target) in EVCore.getXraySelections(configID: configID) {
+            guard let params = try? JSONSerialization.data(
+                withJSONObject: ["balancer": balancer, "target": target]
+            ) else { continue }
+            var error: NSError?
+            _ = EvcoreControl("select", String(decoding: params, as: UTF8.self), &error)
+            if let error {
+                NSLog("Everywhere: could not restore \(balancer) → \(target): \(error.localizedDescription)")
+            }
+        }
     }
 
-    private static func cleanDNS(_ raw: [String]?) -> [String] {
-        let trimmed = (raw ?? []).map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
-        return trimmed.isEmpty ? ["1.1.1.1", "8.8.8.8"] : trimmed
+    private static func memoryFootprint() -> UInt64? {
+        var info = task_vm_info_data_t()
+        var count = mach_msg_type_number_t(
+            MemoryLayout<task_vm_info_data_t>.size / MemoryLayout<integer_t>.size
+        )
+        let result = withUnsafeMutablePointer(to: &info) {
+            $0.withMemoryRebound(to: integer_t.self, capacity: Int(count)) {
+                task_info(mach_task_self_, task_flavor_t(TASK_VM_INFO), $0, &count)
+            }
+        }
+        return result == KERN_SUCCESS ? info.phys_footprint : nil
     }
 
     private func startPathMonitor() {
@@ -190,7 +216,6 @@ final class PacketTunnelProvider: NEPacketTunnelProvider {
     private func handlePathUpdate(_ path: Network.NWPath) {
         var err: NSError?
         guard path.status == .satisfied, let iface = path.availableInterfaces.first else {
-            // No usable path
             _ = EvcoreUpdateDefaultInterface("", -1, false, false, &err)
             return
         }

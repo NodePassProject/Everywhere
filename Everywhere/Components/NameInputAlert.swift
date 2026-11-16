@@ -7,10 +7,6 @@
 
 import UIKit
 
-// SwiftUI's `.alert` did not get a `TextField` action until iOS 16.
-// Since the app targets iOS 15, the simplest cross-version path is to
-// drop down to UIAlertController and present it on top of whatever
-// view controller SwiftUI is currently showing.
 enum NameInputAlert {
     static func present(
         title: String,
@@ -41,7 +37,6 @@ enum NameInputAlert {
         alert.addAction(save)
         alert.preferredAction = save
 
-        // Keep Save disabled while the field is empty.
         alert.textFields?.first?.addAction(UIAction { _ in
             let text = alert.textFields?.first?.text ?? ""
             save.isEnabled = !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty

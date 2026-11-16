@@ -6,46 +6,27 @@
 //
 
 import Foundation
+import Security
 
-final class EVCore {
+nonisolated final class EVCore {
     // MARK: - Identifiers
 
     enum Identifier {
-        /// Bundle identifier prefix for the Everywhere app family.
         static let bundle = "com.argsment.Everywhere"
-        /// App Group suite shared between the app and Network Extension.
         static let appGroupSuite = "group.\(bundle)"
-        /// Bundle identifier of the packet tunnel Network Extension.
         static let networkExtension = "\(bundle).EverywhereNE"
-        /// Description shown for the VPN profile in iOS Settings.
         static let tunnelDescription = "Everywhere"
     }
 
-    /// Fallback DNS servers used when the user hasn't customized them.
-    static let defaultDNSServers = ["1.1.1.1", "8.8.8.8"]
-
-    /// App Group `UserDefaults` shared between the app and Network Extension.
-    /// Prefer the typed `getX` / `setX` accessors below over direct access.
-    ///
-    /// Lazily initialized: the first access registers the values in
-    /// ``registeredDefaults``. `register(defaults:)` only affects keys that
-    /// have not been explicitly written, so user-set values always win.
-    /// Swift's `static let` semantics make this thread-safe and run-once.
     private static let userDefaults: UserDefaults = {
         let defaults = UserDefaults(suiteName: Identifier.appGroupSuite)!
         defaults.register(defaults: registeredDefaults)
         return defaults
     }()
 
-    /// Defaults applied to App Group `UserDefaults` on first access.
-    /// The single source of truth for any setting whose unset value isn't
-    /// the type's natural zero (`false`/`""`/`nil`/empty collection). Bool
-    /// settings that default to `false` are omitted because `bool(forKey:)`
-    /// already returns `false` for unset keys.
     private static let registeredDefaults: [String: Any] = [
-        UserDefaultsKey.dnsServers: defaultDNSServers,
         UserDefaultsKey.selectedCore: CoreType.xray.rawValue,
-        UserDefaultsKey.useZashboard: true,
+        UserDefaultsKey.dashboardEnabled: true,
     ]
 
     // MARK: - UserDefaults Keys
@@ -53,18 +34,20 @@ final class EVCore {
     private enum UserDefaultsKey {
         static let activeByCoreType = "activeByCoreType"
         static let alwaysOnEnabled = "alwaysOnEnabled"
+        static let controllerSecret = "controllerSecret"
+        static let dashboardEnabled = "useZashboard"
         static let dnsServers = "dnsServers"
         static let selectedCore = "selectedCore"
         static let tunnelIncludeAPNs = "tunnelIncludeAPNs"
         static let tunnelIncludeAllNetworks = "tunnelIncludeAllNetworks"
         static let tunnelIncludeCellularServices = "tunnelIncludeCellularServices"
         static let tunnelIncludeLocalNetworks = "tunnelIncludeLocalNetworks"
-        static let useZashboard = "useZashboard"
+        static let tunnelNetworkSettings = "tunnelNetworkSettings"
+        static let xraySelections = "xraySelections"
     }
 
     // MARK: - App Group Container
 
-    /// On-disk container shared between the app and Network Extension.
     static var containerURL: URL {
         guard let url = FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: Identifier.appGroupSuite
@@ -74,12 +57,6 @@ final class EVCore {
         return url
     }
 
-    /// Per-core directory for user-injected assets (geoip/geosite,
-    /// mmdb, certs, sing-box rule_set files, mihomo cache.db, …).
-    /// Each core gets its own subfolder so colliding filenames like
-    /// `cache.db` don't clobber each other. The Network Extension
-    /// reads from the matching subfolder and points the active core
-    /// at it via EvcoreSetResourcesPath.
     static func resourcesURL(for core: CoreType) -> URL {
         let url = containerURL
             .appendingPathComponent("Resources", isDirectory: true)
@@ -104,14 +81,6 @@ final class EVCore {
 
     static func setAlwaysOnEnabled(_ value: Bool) {
         userDefaults.set(value, forKey: UserDefaultsKey.alwaysOnEnabled)
-    }
-    
-    static func getDNSServers() -> [String] {
-        userDefaults.stringArray(forKey: UserDefaultsKey.dnsServers)!
-    }
-
-    static func setDNSServers(_ servers: [String]) {
-        userDefaults.set(servers, forKey: UserDefaultsKey.dnsServers)
     }
     
     static func getSelectedCore() -> CoreType {
@@ -154,11 +123,71 @@ final class EVCore {
         userDefaults.set(value, forKey: UserDefaultsKey.tunnelIncludeCellularServices)
     }
     
-    static func getUseZashboard() -> Bool {
-        userDefaults.bool(forKey: UserDefaultsKey.useZashboard)
+    static func getDashboardEnabled() -> Bool {
+        userDefaults.bool(forKey: UserDefaultsKey.dashboardEnabled)
     }
 
-    static func setUseZashboard(_ value: Bool) {
-        userDefaults.set(value, forKey: UserDefaultsKey.useZashboard)
+    static func setDashboardEnabled(_ value: Bool) {
+        userDefaults.set(value, forKey: UserDefaultsKey.dashboardEnabled)
+    }
+
+    // MARK: - Tunnel Network Settings
+
+    static func getTunnelNetworkSettings() -> TunnelNetworkSettings {
+        if let data = userDefaults.data(forKey: UserDefaultsKey.tunnelNetworkSettings),
+           let settings = try? JSONDecoder().decode(TunnelNetworkSettings.self, from: data) {
+            return settings
+        }
+        var settings = TunnelNetworkSettings()
+        let legacyServers = (userDefaults.stringArray(forKey: UserDefaultsKey.dnsServers) ?? [])
+            .filter { IPNetwork.isAddress($0) }
+        if !legacyServers.isEmpty { settings.dns.servers = legacyServers }
+        return settings
+    }
+
+    static func setTunnelNetworkSettings(_ settings: TunnelNetworkSettings) {
+        guard let data = try? JSONEncoder().encode(settings) else { return }
+        userDefaults.set(data, forKey: UserDefaultsKey.tunnelNetworkSettings)
+    }
+
+    // MARK: - Dashboard Controller
+
+    static let controllerAddress = "127.0.0.1:9090"
+
+    static func getControllerSecret() -> String? {
+        let secret = userDefaults.string(forKey: UserDefaultsKey.controllerSecret)
+        return secret?.isEmpty == false ? secret : nil
+    }
+
+    static func makeControllerSecret() -> String {
+        if let existing = getControllerSecret() { return existing }
+        var bytes = [UInt8](repeating: 0, count: 24)
+        if SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes) != errSecSuccess {
+            bytes = (0..<bytes.count).map { _ in UInt8.random(in: .min ... .max) }
+        }
+        let secret = bytes.map { String(format: "%02x", $0) }.joined()
+        userDefaults.set(secret, forKey: UserDefaultsKey.controllerSecret)
+        return secret
+    }
+
+    // MARK: - Xray Balancer Selections
+
+    static func getXraySelections(configID: UUID) -> [String: String] {
+        let all = userDefaults.dictionary(forKey: UserDefaultsKey.xraySelections) as? [String: [String: String]]
+        return all?[configID.uuidString] ?? [:]
+    }
+
+    static func setXraySelection(configID: UUID, balancer: String, target: String?) {
+        var all = userDefaults.dictionary(forKey: UserDefaultsKey.xraySelections) as? [String: [String: String]] ?? [:]
+        var selections = all[configID.uuidString] ?? [:]
+        selections[balancer] = target?.isEmpty == false ? target : nil
+        all[configID.uuidString] = selections.isEmpty ? nil : selections
+        userDefaults.set(all, forKey: UserDefaultsKey.xraySelections)
+    }
+
+    static func removeXraySelections(configID: UUID) {
+        guard var all = userDefaults.dictionary(forKey: UserDefaultsKey.xraySelections) as? [String: [String: String]],
+              all.removeValue(forKey: configID.uuidString) != nil else { return }
+        userDefaults.set(all, forKey: UserDefaultsKey.xraySelections)
     }
 }

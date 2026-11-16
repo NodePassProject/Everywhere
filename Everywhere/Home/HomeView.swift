@@ -34,6 +34,13 @@ struct HomeView: View {
                         }
                     }
                     .disabled(isToggleDisabled)
+                    if tunnel.coreRunning && appState.dashboardEnabled {
+                        Button {
+                            appState.dashboardHidden = false
+                        } label: {
+                            Label("Show Dashboard", systemImage: "speedometer")
+                        }
+                    }
                 }
                 
                 Section {
@@ -84,11 +91,14 @@ struct HomeView: View {
                 }
                 
                 Section {
-                    Toggle("Use zashboard", isOn: $appState.useZashboardEnabled)
+                    Toggle("Dashboard", isOn: $appState.dashboardEnabled)
                         .disabled(isToggleDisabled)
                 }
             }
             .navigationTitle("Home")
+            .onChange(of: appState.dashboardEnabled) { _ in
+                Task { await tunnel.reconnect() }
+            }
             .alert("Tunnel is running", isPresented: $coreSwitchBlocked) {
                 Button("OK", role: .cancel) {}
             } message: {

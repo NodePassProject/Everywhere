@@ -10,12 +10,16 @@ import SwiftUI
 struct ContentView: View {
     @ObservedObject private var tunnel = TunnelManager.shared
     @ObservedObject private var store = ConfigurationStore.shared
-    @State private var minimized: Bool = false
+    @ObservedObject private var appState = AppState.shared
+
+    private var showsDashboard: Bool {
+        tunnel.coreRunning && appState.dashboardEnabled && !appState.dashboardHidden
+    }
 
     var body: some View {
         ZStack {
-            if tunnel.coreRunning && !minimized {
-                RunningRootView()
+            if showsDashboard {
+                DashboardView(core: store.selectedCore, configID: store.active?.id)
             } else {
                 TabView {
                     HomeView()
@@ -25,42 +29,10 @@ struct ContentView: View {
                         .tabItem { Label("Settings", systemImage: "gearshape") }
                 }
             }
-
-            // Overlay the menu button for the whole tunnel session so
-            // it follows the user from the dashboard back to the home
-            // tabs without losing its drag-positioned location.
-            if tunnel.coreRunning {
-                FloatingMenuButton(
-                    isMinimized: minimized,
-                    onToggleMinimize: { minimized.toggle() },
-                    onStop: stopTunnel
-                )
-            }
         }
-        .animation(.default, value: tunnel.coreRunning)
-        .animation(.default, value: minimized)
+        .animation(.default, value: showsDashboard)
         .onChange(of: tunnel.coreRunning) { running in
-            if !running { minimized = false }
-        }
-    }
-
-    private func stopTunnel() {
-        Task { await tunnel.setEnabled(false, configuration: store.active) }
-    }
-}
-
-private struct RunningRootView: View {
-    @ObservedObject private var store = ConfigurationStore.shared
-    @ObservedObject private var appState = AppState.shared
-
-    var body: some View {
-        if appState.useZashboardEnabled && store.selectedCore != .xray {
-            DashboardView()
-        } else {
-            Text("\(store.selectedCore.displayName) is running")
-                .font(.title2)
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            if !running { appState.dashboardHidden = false }
         }
     }
 }

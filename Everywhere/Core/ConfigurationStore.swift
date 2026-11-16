@@ -14,27 +14,17 @@ final class ConfigurationStore: ObservableObject {
 
     @Published private(set) var configurations: [Configuration] = []
 
-    /// The core the user is currently working with — drives what
-    /// HomeView's picker reads/writes and what `ConfigurationsView`
-    /// filters its list by.
     @Published var selectedCore: CoreType {
         didSet { EVCore.setSelectedCore(selectedCore) }
     }
 
-    /// Each core type has its own "active" configuration so switching
-    /// the core picker doesn't lose the user's pick for the other
-    /// cores.
     @Published private(set) var activeIDByCoreType: [CoreType: UUID] = [:]
 
-    /// The configuration that the tunnel will run with right now —
-    /// always the active one for the selected core.
     var active: Configuration? {
         guard let id = activeIDByCoreType[selectedCore] else { return nil }
         return configurations.first { $0.id == id }
     }
 
-    /// Configurations filtered to the selected core. ConfigurationsView
-    /// renders this.
     var configurationsForSelectedCore: [Configuration] {
         configurations.filter { $0.coreType == selectedCore }
     }
@@ -57,7 +47,6 @@ final class ConfigurationStore: ObservableObject {
             NSSortDescriptor(keyPath: \Configuration.createdAt, ascending: true)
         ]
         configurations = (try? context.fetch(request)) ?? []
-        // Drop dangling active pointers (e.g. row deleted out of band).
         var changed = false
         for (core, id) in activeIDByCoreType {
             if !configurations.contains(where: { $0.id == id }) {
@@ -92,7 +81,6 @@ final class ConfigurationStore: ObservableObject {
         if let name { cfg.name = name }
         if let newType = type, newType != oldType {
             cfg.coreType = newType
-            // Re-balance the per-core active map across the move.
             if activeIDByCoreType[oldType] == cfg.id {
                 activeIDByCoreType[oldType] = configurations.first {
                     $0.coreType == oldType && $0.id != cfg.id
@@ -115,6 +103,7 @@ final class ConfigurationStore: ObservableObject {
         let wasActive = (activeIDByCoreType[type] == id)
         context.delete(cfg)
         save()
+        EVCore.removeXraySelections(configID: id)
         reload()
         if wasActive {
             activeIDByCoreType[type] = configurations.first { $0.coreType == type }?.id
@@ -161,6 +150,5 @@ final class ConfigurationStore: ObservableObject {
         create(name: "Xray", type: .xray, content: ExampleConfigs.xray)
         create(name: "sing-box", type: .singbox, content: ExampleConfigs.singbox)
         create(name: "mihomo", type: .mihomo, content: ExampleConfigs.mihomo)
-        // create() already populated activeIDByCoreType for each type.
     }
 }

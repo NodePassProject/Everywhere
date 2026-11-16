@@ -7,8 +7,12 @@
 
 import Foundation
 
+struct DashboardAccess {
+    let secret: String
+}
+
 protocol CoreNormalizer {
-    static func normalize(_ content: String, useZashboard: Bool) throws -> String
+    static func normalize(_ content: String, tunnel: TunnelNetworkSettings, dashboard: DashboardAccess?) throws -> String
 }
 
 enum NormalizeError: LocalizedError {
@@ -30,14 +34,9 @@ enum NormalizeError: LocalizedError {
 // MARK: - Shared constants & log capping
 
 extension CoreNormalizer {
-    static var tunnelHost: String { "198.18.0.1" }
-    static var tunnelPrefix: String { "198.18.0.1/16" }
-    static var tunnelHost6: String { "fd00::1" }
-    static var tunnelPrefix6: String { "fd00::1/126" }
-    static var tunnelMTU: Int { 1500 }
     static var everywhereTag: String { "everywhere-tun" }
     static var tunStack: String { "gvisor" }
-    static var clashAPIAddress: String { "127.0.0.1:9090" }
+    static var clashAPIAddress: String { EVCore.controllerAddress }
     
     static func cappedLevel(_ level: String?, order: [String], floor: String) -> String {
         guard let level = level?.trimmingCharacters(in: .whitespaces), !level.isEmpty else { return floor }

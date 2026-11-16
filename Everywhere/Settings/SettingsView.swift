@@ -24,13 +24,10 @@ struct SettingsView: View {
                     } label: {
                         Label("Tunnel", systemImage: "shield")
                     }
-                }
-
-                Section("Network") {
                     NavigationLink {
-                        DNSSettingsView()
+                        DashboardSettingsView(core: nil)
                     } label: {
-                        Label("DNS", systemImage: "network")
+                        Label("Dashboard", systemImage: "speedometer")
                     }
                 }
 

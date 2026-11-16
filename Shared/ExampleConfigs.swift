@@ -7,16 +7,7 @@
 
 import Foundation
 
-// Minimal starter configs. Each one routes everything through a
-// placeholder direct outbound — replace it with your real proxy server
-// before use. The TUN inbound that consumes the iOS NEPacketTunnelFlow
-// utun is injected by ConfigNormalizer at start time, so don't add one
-// here (a duplicate would conflict with ours).
-//
-// mihomo and sing-box also expose the clash-compat REST API on
-// 127.0.0.1:9090 — that's the address the bundled zashboard
-// (Dashboard tab) talks to. Xray-core has no clash API.
-enum ExampleConfigs {
+nonisolated enum ExampleConfigs {
     static let xray = #"""
     {
       "log": {"loglevel": "warning"},

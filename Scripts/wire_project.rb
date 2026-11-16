@@ -1,24 +1,17 @@
 #!/usr/bin/env ruby
-# Wires the EverywhereCore SwiftPM package, the Runestone editor
-# packages, and the zashboard dashboard resource bundle into
-# Everywhere.xcodeproj (iOS). Idempotent — running it twice is safe.
-#
-# EverywhereCore ships as a prebuilt xcframework on GitHub Releases;
-# SwiftPM downloads and verifies it. The app target embeds it; the
-# network extension target links and loads from the host app at runtime.
+# Wires SwiftPM packages and build settings into Everywhere.xcodeproj. Idempotent.
 
 require 'xcodeproj'
 
 PROJECT_PATH       = File.expand_path('../Everywhere.xcodeproj', __dir__)
-DASHBOARD_REL_PATH = 'ThirdParty/zashboard'
-DASHBOARD_NAME     = 'zashboard'
 DEPLOYMENT_TARGET  = '15.0'
 SHARED_FOLDER      = 'Shared'
 
 EVERYWHERE_CORE_REPO        = 'https://github.com/NodePassProject/EverywhereCore'
-EVERYWHERE_CORE_MIN_VERSION = '2026.05.18'
+EVERYWHERE_CORE_MIN_VERSION = '2026.11.15'
 EVERYWHERE_CORE_REQ         = { 'kind' => 'upToNextMajorVersion', 'minimumVersion' => EVERYWHERE_CORE_MIN_VERSION }
 EVERYWHERE_CORE_PRODUCT     = 'EverywhereCore'
+EVERYWHERE_CORE_LOCAL_PATH  = ENV['EVERYWHERE_CORE_PATH'].to_s.strip
 
 RUNESTONE_URL = 'https://github.com/simonbs/Runestone'
 RUNESTONE_REQ = { 'kind' => 'upToNextMajorVersion', 'minimumVersion' => '0.5.0' }
@@ -32,7 +25,6 @@ app_target = project.targets.find { |t| t.name == 'Everywhere' } or abort 'Every
 ne_target  = project.targets.find { |t| t.name == 'EverywhereNE' } or abort 'EverywhereNE target missing'
 
 # --- Tear down any prior local-xcframework wiring -------------------------
-# Self-healing for repos previously wired against Frameworks/EverywhereCore.xcframework.
 stale_xcfw = project.files.select { |f| f.path == 'Frameworks/EverywhereCore.xcframework' }
 stale_xcfw.each do |ref|
   project.targets.each do |t|
@@ -48,8 +40,6 @@ stale_xcfw.each do |ref|
   ref.remove_from_project
 end
 
-# Strip $(PROJECT_DIR)/Frameworks from FRAMEWORK_SEARCH_PATHS now that
-# SwiftPM owns the binary — leaving it is harmless but noisy.
 stale_search_path = '$(PROJECT_DIR)/Frameworks'
 [app_target, ne_target].each do |target|
   target.build_configurations.each do |config|
@@ -99,13 +89,6 @@ def link_product(target, project, dep)
   phase.files << bf
 end
 
-# Inverse of ensure_swift_package + add_product_dep + link_product: strip a
-# package's Frameworks build-file entries and product dependencies from every
-# target, then remove the dependency and package objects themselves. Objects
-# are matched by ISA rather than list membership, so it also sweeps refs left
-# orphaned by an earlier partial run; deleting a list entry alone leaves the
-# object in the pbxproj, so remove_from_project is explicit (cf. the stale
-# xcframework teardown above). A no-op when absent, so re-running self-heals.
 def remove_swift_package(project, url)
   pkg = project.objects.find do |o|
     o.isa == 'XCRemoteSwiftPackageReference' && o.repositoryURL == url
@@ -128,19 +111,56 @@ def remove_swift_package(project, url)
   pkg.remove_from_project
 end
 
+def ensure_local_swift_package(project, relative_path)
+  pkg = project.root_object.package_references.find do |p|
+    p.isa == 'XCLocalSwiftPackageReference' && p.relative_path == relative_path
+  end
+  unless pkg
+    pkg = project.new(Xcodeproj::Project::Object::XCLocalSwiftPackageReference)
+    pkg.relative_path = relative_path
+    project.root_object.package_references << pkg
+  end
+  pkg
+end
+
+def remove_local_swift_packages(project, product_name)
+  project.objects.select { |o| o.isa == 'XCLocalSwiftPackageReference' }.each do |pkg|
+    deps = project.objects.select do |o|
+      o.isa == 'XCSwiftPackageProductDependency' && o.package == pkg
+    end
+    next unless deps.any? { |d| d.product_name == product_name }
+    deps.each do |dep|
+      project.targets.each do |target|
+        target.frameworks_build_phase.files.select { |bf| bf.product_ref == dep }.each do |bf|
+          target.frameworks_build_phase.files.delete(bf)
+        end
+        target.package_product_dependencies.delete(dep)
+      end
+      dep.remove_from_project
+    end
+    project.root_object.package_references.delete(pkg)
+    pkg.remove_from_project
+  end
+end
+
 # --- EverywhereCore (both targets) ---------------------------------------
-core_pkg = ensure_swift_package(project, EVERYWHERE_CORE_REPO, EVERYWHERE_CORE_REQ)
+if EVERYWHERE_CORE_LOCAL_PATH.empty?
+  remove_local_swift_packages(project, EVERYWHERE_CORE_PRODUCT)
+  core_pkg = ensure_swift_package(project, EVERYWHERE_CORE_REPO, EVERYWHERE_CORE_REQ)
+else
+  local_xcframework = File.expand_path(
+    File.join('..', EVERYWHERE_CORE_LOCAL_PATH, 'EverywhereCore.xcframework'), __dir__
+  )
+  File.directory?(local_xcframework) or
+    abort "#{local_xcframework} is missing — run Scripts/build.sh in the EverywhereCore checkout first"
+  remove_swift_package(project, EVERYWHERE_CORE_REPO)
+  core_pkg = ensure_local_swift_package(project, EVERYWHERE_CORE_LOCAL_PATH)
+end
 core_app_dep = add_product_dep(app_target, project, core_pkg, EVERYWHERE_CORE_PRODUCT)
 core_ne_dep  = add_product_dep(ne_target,  project, core_pkg, EVERYWHERE_CORE_PRODUCT)
 link_product(app_target, project, core_app_dep)
 link_product(ne_target,  project, core_ne_dep)
 
-# No manual Embed Frameworks entry: Xcode auto-embeds the framework slice
-# from a SwiftPM binary target into the app bundle when the product is in
-# the Frameworks build phase. Adding it to a Copy Files phase by productRef
-# double-resolves and fails with "No such file or directory" on the bare
-# product name. The network extension links the same product but is not
-# embedded — it loads from the host app's Frameworks/ at runtime.
 stale_embed = app_target.copy_files_build_phases.find do |p|
   p.symbol_dst_subfolder_spec == :frameworks
 end
@@ -163,9 +183,6 @@ TS_LANG_PRODUCTS.each do |product|
   link_product(app_target, project, add_product_dep(app_target, project, ts_lang_pkg, product))
 end
 
-# YAML (Argsment/YAML) was wired here but no source imports it — mihomo
-# config handling is string-based, not a real YAML parse. Tear down any
-# lingering wiring from projects generated before it was retired.
 remove_swift_package(project, 'https://github.com/Argsment/YAML')
 
 # --- libresolv.tbd (Go runtime's DNS resolver needs it) ------------------
@@ -187,8 +204,6 @@ link_system_lib(ne_target,  project, 'libresolv.tbd', 'usr/lib/libresolv.tbd')
 link_system_lib(app_target, project, 'libresolv.tbd', 'usr/lib/libresolv.tbd')
 
 # --- UIKit.framework (sing-box's device_darwin.m calls UIDevice) ---------
-# The static core doesn't carry its cgo LDFLAGS, and nothing in the NE
-# imports UIKit to autolink it. The app gets it via SwiftUI.
 link_system_lib(ne_target, project, 'UIKit.framework',
                 'System/Library/Frameworks/UIKit.framework', 'wrapper.framework')
 
@@ -204,17 +219,9 @@ end
   end
 end
 
-# --- zashboard folder reference (bundled into the app target) -----------
-# `lastKnownFileType = folder` is the magic that makes Xcode treat this
-# as a "blue folder" — it copies the whole tree into the .app preserving
-# relative paths, which the dashboard's index.html requires
-# (./assets/index-*.js). Self-healing cleanup catches the legacy
-# yacd-gh-pages reference and any moved zashboard ref.
+# --- Retired dashboard bundles -------------------------------------------
 project.files.select { |f|
-  next false unless f.path
-  basename = File.basename(f.path)
-  (basename == 'yacd-gh-pages' || basename == DASHBOARD_NAME) &&
-    f.path != DASHBOARD_REL_PATH
+  f.path && %w[zashboard yacd-gh-pages].include?(File.basename(f.path))
 }.each do |stale|
   project.targets.each do |t|
     t.resources_build_phase.files.select { |bf| bf.file_ref == stale }.each do |bf|
@@ -224,26 +231,7 @@ project.files.select { |f|
   stale.remove_from_project
 end
 
-dashboard_ref = project.main_group.files.find { |f| f.path == DASHBOARD_REL_PATH }
-unless dashboard_ref
-  dashboard_ref = project.new(Xcodeproj::Project::Object::PBXFileReference)
-  dashboard_ref.path = DASHBOARD_REL_PATH
-  dashboard_ref.name = DASHBOARD_NAME
-  dashboard_ref.source_tree = 'SOURCE_ROOT'
-  dashboard_ref.last_known_file_type = 'folder'
-  project.main_group << dashboard_ref
-end
-unless app_target.resources_build_phase.files.any? { |bf| bf.file_ref == dashboard_ref }
-  app_target.resources_build_phase.add_file_reference(dashboard_ref)
-end
-
 # --- Shared/ synced root group (both targets compile its sources) --------
-# Sources that both the host app and the Network Extension need —
-# Core Data stack, AppGroup helper, ConfigNormalizer, etc. — live in
-# Shared/. The folder is registered as a PBXFileSystemSynchronizedRootGroup
-# on both targets so every .swift inside auto-joins each target's
-# Sources build phase. This is the canonical Xcode-16 way to share
-# sources across targets without per-file membership exceptions.
 shared_group = project.main_group.children.find do |c|
   c.is_a?(Xcodeproj::Project::Object::PBXFileSystemSynchronizedRootGroup) && c.path == SHARED_FOLDER
 end
@@ -260,4 +248,5 @@ end
 end
 
 project.save
-puts "Wired EverywhereCore (>= #{EVERYWHERE_CORE_MIN_VERSION}, SwiftPM) + Runestone + zashboard into #{PROJECT_PATH}"
+core_source = EVERYWHERE_CORE_LOCAL_PATH.empty? ? ">= #{EVERYWHERE_CORE_MIN_VERSION}, SwiftPM" : "local, #{EVERYWHERE_CORE_LOCAL_PATH}"
+puts "Wired EverywhereCore (#{core_source}) + Runestone into #{PROJECT_PATH}"

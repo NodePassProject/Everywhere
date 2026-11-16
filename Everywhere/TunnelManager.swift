@@ -23,6 +23,7 @@ final class TunnelManager: ObservableObject {
     private var didConnect: Bool = false
     
     private var transitionTimeoutTask: Task<Void, Never>?
+    private var reconnectTask: Task<Void, Never>?
     private static let transitionTimeoutNanos: UInt64 = 30 * 1_000_000_000
 
     private init() {
@@ -83,6 +84,15 @@ final class TunnelManager: ObservableObject {
         }
     }
     
+    func reconnectSoon() {
+        reconnectTask?.cancel()
+        reconnectTask = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: 800_000_000)
+            guard !Task.isCancelled else { return }
+            await self?.reconnect()
+        }
+    }
+    
     func applyAlwaysOn(_ enabled: Bool) async {
         if status.isActive {
             await reconnect()
@@ -110,6 +120,63 @@ final class TunnelManager: ObservableObject {
         lastError = nil
     }
 
+    // MARK: - Provider messages
+
+    nonisolated enum MessageError: LocalizedError {
+        case notConnected
+        case timedOut
+        case invalidResponse
+        case provider(String)
+
+        var errorDescription: String? {
+            switch self {
+            case .notConnected: return String(localized: "The tunnel is not connected.")
+            case .timedOut: return String(localized: "The tunnel did not respond in time.")
+            case .invalidResponse: return String(localized: "The tunnel returned an unexpected response.")
+            case .provider(let message): return message
+            }
+        }
+    }
+
+    var connectedDate: Date? { manager?.connection.connectedDate }
+
+    func sendMessage(_ message: [String: Any], timeout: TimeInterval = 10) async throws -> [String: Any] {
+        guard status == .connected,
+              let session = manager?.connection as? NETunnelProviderSession else {
+            throw MessageError.notConnected
+        }
+        let payload = try JSONSerialization.data(withJSONObject: message)
+        let reply: Data? = try await withCheckedThrowingContinuation { continuation in
+            let gate = ResumeGate()
+            do {
+                try session.sendProviderMessage(payload) { @Sendable response in
+                    if gate.claim() { continuation.resume(returning: response) }
+                }
+            } catch {
+                if gate.claim() { continuation.resume(throwing: error) }
+                return
+            }
+            DispatchQueue.global().asyncAfter(deadline: .now() + timeout) { @Sendable in
+                if gate.claim() { continuation.resume(throwing: MessageError.timedOut) }
+            }
+        }
+        guard let reply,
+              let json = try? JSONSerialization.jsonObject(with: reply) as? [String: Any] else {
+            throw MessageError.invalidResponse
+        }
+        return json
+    }
+
+    func control(_ method: String, params: String? = nil, timeout: TimeInterval = 10) async throws -> Data {
+        var message: [String: Any] = ["type": "control", "method": method]
+        if let params { message["params"] = params }
+        let reply = try await sendMessage(message, timeout: timeout)
+        guard reply["ok"] as? Bool == true, let result = reply["result"] as? String else {
+            throw MessageError.provider(reply["error"] as? String ?? String(localized: "Unknown"))
+        }
+        return Data(result.utf8)
+    }
+
     private func ensureManager(coreType: CoreType, configID: UUID) async throws -> NETunnelProviderManager {
         let m = manager ?? NETunnelProviderManager()
         let proto = (m.protocolConfiguration as? NETunnelProviderProtocol) ?? NETunnelProviderProtocol()
@@ -117,8 +184,7 @@ final class TunnelManager: ObservableObject {
         proto.serverAddress = "Everywhere"
         proto.providerConfiguration = [
             "coreType": coreType.rawValue,
-            "configID": configID.uuidString,
-            "dnsServers": AppState.shared.dnsServers
+            "configID": configID.uuidString
         ]
         proto.includeAllNetworks = AppState.shared.tunnelIncludeAllNetworks
         proto.excludeLocalNetworks = !AppState.shared.tunnelIncludeLocalNetworks
@@ -244,6 +310,18 @@ final class TunnelManager: ObservableObject {
                 }
             }
         }
+    }
+}
+
+nonisolated private final class ResumeGate: @unchecked Sendable {
+    private let lock = NSLock()
+    private var claimed = false
+
+    func claim() -> Bool {
+        lock.lock(); defer { lock.unlock() }
+        if claimed { return false }
+        claimed = true
+        return true
     }
 }
 

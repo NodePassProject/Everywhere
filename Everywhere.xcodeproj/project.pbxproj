@@ -16,7 +16,6 @@
 		8DA46DEAF1392B6586DBC9FC /* libresolv.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = AD2724A4F89A96B133F540CB /* libresolv.tbd */; };
 		CB0BA4282FA6277800E37B2C /* NetworkExtension.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CB0BA4272FA6277800E37B2C /* NetworkExtension.framework */; };
 		CB0BA4302FA6277800E37B2C /* EverywhereNE.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = CB0BA4252FA6277800E37B2C /* EverywhereNE.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		E21CF12D020F260C78EF147B /* zashboard in Resources */ = {isa = PBXBuildFile; fileRef = 1197532FC5218FEC63D188EA /* zashboard */; };
 		E5F31B3E04C91921C6D11349 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D18EC54D110E8459E02EA2C3 /* UIKit.framework */; };
 /* End PBXBuildFile section */
 
@@ -45,7 +44,6 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		1197532FC5218FEC63D188EA /* zashboard */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder; name = zashboard; path = ThirdParty/zashboard; sourceTree = SOURCE_ROOT; };
 		AD2724A4F89A96B133F540CB /* libresolv.tbd */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libresolv.tbd; path = usr/lib/libresolv.tbd; sourceTree = SDKROOT; };
 		CB0BA4102FA6272C00E37B2C /* Everywhere.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Everywhere.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		CB0BA4252FA6277800E37B2C /* EverywhereNE.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = EverywhereNE.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -129,7 +127,6 @@
 				CB0BA4292FA6277800E37B2C /* EverywhereNE */,
 				CB0BA4262FA6277800E37B2C /* Frameworks */,
 				CB0BA4112FA6272C00E37B2C /* Products */,
-				1197532FC5218FEC63D188EA /* zashboard */,
 			);
 			sourceTree = "<group>";
 		};
@@ -216,7 +213,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 2640;
-				LastUpgradeCheck = 2660;
+				LastUpgradeCheck = 2710;
 				TargetAttributes = {
 					CB0BA40F2FA6272C00E37B2C = {
 						CreatedOnToolsVersion = 26.4.1;
@@ -257,7 +254,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				E21CF12D020F260C78EF147B /* zashboard in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -430,7 +426,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Everywhere/Everywhere.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 27;
+				CURRENT_PROJECT_VERSION = 28;
 				DEVELOPMENT_TEAM = C7AS5D38Q8;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -443,12 +439,12 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = "$(RECOMMENDED_IPHONEOS_DEPLOYMENT_TARGET)";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.7;
+				MARKETING_VERSION = 2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.argsment.Everywhere;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -468,7 +464,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Everywhere/Everywhere.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 27;
+				CURRENT_PROJECT_VERSION = 28;
 				DEVELOPMENT_TEAM = C7AS5D38Q8;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -481,12 +477,12 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = "$(RECOMMENDED_IPHONEOS_DEPLOYMENT_TARGET)";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.7;
+				MARKETING_VERSION = 2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.argsment.Everywhere;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -504,19 +500,19 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = EverywhereNE/EverywhereNE.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 27;
+				CURRENT_PROJECT_VERSION = 28;
 				DEVELOPMENT_TEAM = C7AS5D38Q8;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = EverywhereNE/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = EverywhereNE;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = "$(RECOMMENDED_IPHONEOS_DEPLOYMENT_TARGET)";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.7;
+				MARKETING_VERSION = 2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.argsment.Everywhere.EverywhereNE;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -534,19 +530,19 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = EverywhereNE/EverywhereNE.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 27;
+				CURRENT_PROJECT_VERSION = 28;
 				DEVELOPMENT_TEAM = C7AS5D38Q8;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = EverywhereNE/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = EverywhereNE;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = "$(RECOMMENDED_IPHONEOS_DEPLOYMENT_TARGET)";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.7;
+				MARKETING_VERSION = 2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.argsment.Everywhere.EverywhereNE;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -605,7 +601,7 @@
 			repositoryURL = "https://github.com/NodePassProject/EverywhereCore";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 2026.05.18;
+				minimumVersion = 2026.11.15;
 			};
 		};
 		803E3EBB055B6F1C161E71E9 /* XCRemoteSwiftPackageReference "Runestone" */ = {

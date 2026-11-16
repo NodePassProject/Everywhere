@@ -37,7 +37,7 @@ enum MihomoNormalizer: CoreNormalizer {
         "secret",
     ]
     
-    static func normalize(_ content: String, useZashboard: Bool) throws -> String {
+    static func normalize(_ content: String, tunnel: TunnelNetworkSettings, dashboard: DashboardAccess?) throws -> String {
         let normalized = content
             .replacingOccurrences(of: "\r\n", with: "\n")
             .replacingOccurrences(of: "\r", with: "\n")
@@ -50,7 +50,7 @@ enum MihomoNormalizer: CoreNormalizer {
         while i < lines.count {
             let line = lines[i]
 
-            if useZashboard && matchesStrippedTopLevelKey(line) {
+            if dashboard != nil && matchesStrippedTopLevelKey(line) {
                 i += 1
                 while i < lines.count {
                     if isColumnZeroContent(lines[i]) { break }
@@ -88,7 +88,7 @@ enum MihomoNormalizer: CoreNormalizer {
                     output.append(sub)
                     i += 1
                 }
-                output.append(contentsOf: tunForcedLines(indent: subIndent ?? 2))
+                output.append(contentsOf: tunForcedLines(indent: subIndent ?? 2, tunnel: tunnel))
                 continue
             }
 
@@ -109,7 +109,7 @@ enum MihomoNormalizer: CoreNormalizer {
                 output.append("")
             }
             output.append("tun:")
-            output.append(contentsOf: tunForcedLines(indent: 2))
+            output.append(contentsOf: tunForcedLines(indent: 2, tunnel: tunnel))
         }
 
         if !sawLogLevel {
@@ -119,28 +119,32 @@ enum MihomoNormalizer: CoreNormalizer {
             output.append("log-level: \(logFloor)")
         }
         
-        if useZashboard {
+        if let dashboard {
             if let last = output.last, !last.isEmpty {
                 output.append("")
             }
             output.append("external-controller: \(clashAPIAddress)")
+            output.append("secret: \"\(dashboard.secret)\"")
         }
 
         return output.joined(separator: "\n")
     }
 
-    private static func tunForcedLines(indent: Int) -> [String] {
+    private static func tunForcedLines(indent: Int, tunnel: TunnelNetworkSettings) -> [String] {
         let pad = String(repeating: " ", count: max(indent, 1))
         let listPad = pad + "  "
-        return [
+        var lines = [
             "\(pad)enable: true",
             "\(pad)stack: \(tunStack)",
-            "\(pad)mtu: \(tunnelMTU)",
+            "\(pad)mtu: \(tunnel.mtu)",
             "\(pad)inet4-address:",
-            "\(listPad)- \(tunnelPrefix)",
-            "\(pad)inet6-address:",
-            "\(listPad)- \(tunnelPrefix6)",
         ]
+        lines += tunnel.ipv4.addresses.map { "\(listPad)- \($0)" }
+        if tunnel.ipv6.isEnabled {
+            lines.append("\(pad)inet6-address:")
+            lines += tunnel.ipv6.addresses.map { "\(listPad)- \($0)" }
+        }
+        return lines
     }
 
     private static func matchesStrippedTopLevelKey(_ line: String) -> Bool {
